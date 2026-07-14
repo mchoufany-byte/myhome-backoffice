@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PhoneField } from "@/components/PhoneField";
 
 export function NewClientForm() {
   const router = useRouter();
@@ -10,6 +11,9 @@ export function NewClientForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientType, setClientType] = useState<"individual" | "company">("individual");
+  // Bumped on clear/submit to force the PhoneField dropdowns to remount back to
+  // their defaults -- form.reset() alone doesn't reset their internal React state.
+  const [resetKey, setResetKey] = useState(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,12 +84,14 @@ export function NewClientForm() {
 
     formRef.current?.reset();
     setClientType("individual");
+    setResetKey((k) => k + 1);
     router.refresh();
   }
 
   function handleClear() {
     formRef.current?.reset();
     setClientType("individual");
+    setResetKey((k) => k + 1);
     setError(null);
   }
 
@@ -132,18 +138,12 @@ export function NewClientForm() {
         <label className="block text-xs text-ink/60 mb-1">Email</label>
         <input name="email" type="email" required className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
       </div>
-      <div>
-        <label className="block text-xs text-ink/60 mb-1">Phone</label>
-        <input name="phone" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
-      </div>
+      <PhoneField key={`phone-${resetKey}`} name="phone" label="Phone" />
       <div>
         <label className="block text-xs text-ink/60 mb-1">Secondary Email</label>
         <input name="secondary_email" type="email" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
       </div>
-      <div>
-        <label className="block text-xs text-ink/60 mb-1">Secondary Phone</label>
-        <input name="secondary_phone" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
-      </div>
+      <PhoneField key={`secondary_phone-${resetKey}`} name="secondary_phone" label="Secondary Phone" />
       <div>
         <label className="block text-xs text-ink/60 mb-1">Preferred Language</label>
         <select name="preferred_language" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm">
@@ -175,10 +175,7 @@ export function NewClientForm() {
         <label className="block text-xs text-ink/60 mb-1">Name</label>
         <input name="contact_person_name" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
       </div>
-      <div>
-        <label className="block text-xs text-ink/60 mb-1">Phone</label>
-        <input name="contact_person_phone" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
-      </div>
+      <PhoneField key={`contact_person_phone-${resetKey}`} name="contact_person_phone" label="Phone" />
       <div>
         <label className="block text-xs text-ink/60 mb-1">Relationship</label>
         <input
@@ -193,10 +190,7 @@ export function NewClientForm() {
         <label className="block text-xs text-ink/60 mb-1">Name</label>
         <input name="emergency_contact_name" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
       </div>
-      <div>
-        <label className="block text-xs text-ink/60 mb-1">Phone</label>
-        <input name="emergency_contact_phone" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
-      </div>
+      <PhoneField key={`emergency_contact_phone-${resetKey}`} name="emergency_contact_phone" label="Phone" />
       <div>
         <label className="block text-xs text-ink/60 mb-1">Relationship</label>
         <input

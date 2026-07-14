@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PhoneField } from "@/components/PhoneField";
 
 type Client = {
   id: string;
@@ -217,14 +218,7 @@ export function EditClientForm({ client, onDone }: { client: Client; onDone: () 
             className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
           />
         </div>
-        <div>
-          <label className="block text-xs text-ink/60 mb-1">Phone</label>
-          <input
-            name="phone"
-            defaultValue={client.phone ?? ""}
-            className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
-          />
-        </div>
+        <PhoneField name="phone" label="Phone" defaultValue={client.phone} />
         <div>
           <label className="block text-xs text-ink/60 mb-1">Preferred Language</label>
           <select
@@ -247,14 +241,7 @@ export function EditClientForm({ client, onDone }: { client: Client; onDone: () 
             className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
           />
         </div>
-        <div>
-          <label className="block text-xs text-ink/60 mb-1">Secondary Phone</label>
-          <input
-            name="secondary_phone"
-            defaultValue={client.secondary_phone ?? ""}
-            className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
-          />
-        </div>
+        <PhoneField name="secondary_phone" label="Secondary Phone" defaultValue={client.secondary_phone} />
       </div>
 
       {clientType === "company" && (
@@ -293,14 +280,7 @@ export function EditClientForm({ client, onDone }: { client: Client; onDone: () 
             className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
           />
         </div>
-        <div>
-          <label className="block text-xs text-ink/60 mb-1">Phone</label>
-          <input
-            name="contact_person_phone"
-            defaultValue={client.contact_person_phone ?? ""}
-            className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
-          />
-        </div>
+        <PhoneField name="contact_person_phone" label="Phone" defaultValue={client.contact_person_phone} />
         <div>
           <label className="block text-xs text-ink/60 mb-1">Relationship</label>
           <input
@@ -322,14 +302,7 @@ export function EditClientForm({ client, onDone }: { client: Client; onDone: () 
             className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
           />
         </div>
-        <div>
-          <label className="block text-xs text-ink/60 mb-1">Phone</label>
-          <input
-            name="emergency_contact_phone"
-            defaultValue={client.emergency_contact_phone ?? ""}
-            className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
-          />
-        </div>
+        <PhoneField name="emergency_contact_phone" label="Phone" defaultValue={client.emergency_contact_phone} />
         <div>
           <label className="block text-xs text-ink/60 mb-1">Relationship</label>
           <input
