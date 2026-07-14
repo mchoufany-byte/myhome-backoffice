@@ -2,11 +2,13 @@ import Link from "next/link";
 import { requireSection } from "@/lib/guard";
 import { createClient } from "@/lib/supabase/server";
 import { getRoles, getAccessMap, ALL_SECTIONS, SECTION_LABELS } from "@/lib/roles";
-import { updateStaffRole, setStaffActive } from "./actions";
+import { updateStaffRole } from "./actions";
 import { NewStaffForm } from "./NewStaffForm";
+import { StaffAccess } from "./StaffAccess";
 
 export default async function StaffPage() {
-  await requireSection("staff");
+  const currentStaff = await requireSection("staff");
+  const isOwner = currentStaff.role === "owner";
   const supabase = createClient();
 
   const [{ data: staffList }, roles, accessMap] = await Promise.all([
@@ -71,16 +73,7 @@ export default async function StaffPage() {
                         <p className="text-xs text-ink/50 mt-0.5">{s.phone ?? "—"}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <form action={setStaffActive} className="flex flex-col items-start gap-1.5">
-                          <input type="hidden" name="id" value={s.id} />
-                          <input type="hidden" name="is_active" value={(!active).toString()} />
-                          <span className={`text-[10px] px-2 py-1 border uppercase tracking-wide whitespace-nowrap ${active ? "border-line text-ink/60" : "border-red text-red"}`}>
-                            {active ? "Active" : "Deactivated"}
-                          </span>
-                          <button type="submit" className="text-xs text-ink/60 font-medium hover:underline whitespace-nowrap">
-                            {active ? "Deactivate" : "Reactivate"}
-                          </button>
-                        </form>
+                        <StaffAccess staffId={s.id} isActive={active} isOwner={isOwner} />
                       </td>
                     </tr>
                   );
