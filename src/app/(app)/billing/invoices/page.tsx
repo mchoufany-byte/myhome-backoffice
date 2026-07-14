@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/guard";
 import { markInvoicePaid } from "./actions";
 import { NewInvoiceForm } from "./NewInvoiceForm";
+import { GenerateInvoicesButton } from "./GenerateInvoicesButton";
 
 function shortDate(iso: string | null) {
   if (!iso) return "";
@@ -73,6 +74,8 @@ export default async function InvoicesPage() {
         ${outstandingTotal.toFixed(2)} outstanding across {outstanding.length + overdue.length} invoice
         {outstanding.length + overdue.length === 1 ? "" : "s"}.
       </p>
+
+      <GenerateInvoicesButton />
 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">

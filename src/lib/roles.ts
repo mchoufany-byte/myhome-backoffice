@@ -13,7 +13,9 @@ export type Section =
   | "billing"
   | "staff"
   | "documents"
-  | "emergency";
+  | "emergency"
+  | "arrival_concierge"
+  | "renewals";
 
 export const ALL_SECTIONS: Section[] = [
   "dashboard",
@@ -25,6 +27,8 @@ export const ALL_SECTIONS: Section[] = [
   "staff",
   "documents",
   "emergency",
+  "arrival_concierge",
+  "renewals",
 ];
 
 export const SECTION_LABELS: Record<Section, string> = {
@@ -37,6 +41,8 @@ export const SECTION_LABELS: Record<Section, string> = {
   staff: "Staff",
   documents: "Documents",
   emergency: "Emergency",
+  arrival_concierge: "Arrival Concierge",
+  renewals: "Renewals",
 };
 
 export type RoleDef = { key: string; label: string; is_system: boolean };

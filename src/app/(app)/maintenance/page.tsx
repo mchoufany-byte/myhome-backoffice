@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/guard";
-import { markMaintenanceCompleted } from "./actions";
 import { NewRequestForm } from "./NewRequestForm";
+import { MaintenanceFeeAction } from "./MaintenanceFeeAction";
 
 function shortDate(iso: string | null) {
   if (!iso) return "";
@@ -23,7 +23,9 @@ export default async function MaintenancePage() {
   const [{ data: jobs }, { data: properties }] = await Promise.all([
     supabase
       .from("maintenance_requests")
-      .select("id, title, description, status, quote_amount, quote_url, vendor, created_at, properties(nickname, address)")
+      .select(
+        "id, title, description, status, quote_amount, quote_url, vendor, created_at, coordination_fee, fee_invoiced, properties(nickname, address)"
+      )
       .order("created_at", { ascending: false }),
     supabase.from("properties").select("id, nickname, address").order("nickname", { ascending: true }),
   ]);
@@ -68,17 +70,9 @@ export default async function MaintenancePage() {
                   </span>
                 </div>
                 {(j.status === "in_progress" || j.status === "awaiting_approval") && (
-                  <form
-                    action={async () => {
-                      "use server";
-                      await markMaintenanceCompleted(j.id);
-                    }}
-                    className="mt-3"
-                  >
-                    <button type="submit" className="text-xs text-green font-medium hover:underline">
-                      Mark Completed
-                    </button>
-                  </form>
+                  <div className="mt-3">
+                    <MaintenanceFeeAction jobId={j.id} quoteAmount={j.quote_amount ? Number(j.quote_amount) : null} />
+                  </div>
                 )}
               </div>
             ))}
@@ -91,7 +85,11 @@ export default async function MaintenancePage() {
               <div key={j.id} className="px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-ink">{j.title}</p>
-                  <p className="text-xs text-ink/50 mt-0.5">{j.properties?.nickname || j.properties?.address}</p>
+                  <p className="text-xs text-ink/50 mt-0.5">
+                    {j.properties?.nickname || j.properties?.address}
+                    {j.coordination_fee != null ? ` · Fee $${Number(j.coordination_fee).toFixed(2)}` : ""}
+                    {j.fee_invoiced ? " · Invoiced" : j.coordination_fee != null ? " · Not yet invoiced" : ""}
+                  </p>
                 </div>
                 <span className="text-[10px] px-2 py-1 border border-line text-ink/60 uppercase tracking-wide">
                   {STATUS_LABEL[j.status] ?? j.status}
