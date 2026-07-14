@@ -3,11 +3,27 @@ import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
 
-function StatCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
+function StatCard({
+  label,
+  value,
+  href,
+  alert = false,
+}: {
+  label: string;
+  value: number | string;
+  href?: string;
+  alert?: boolean;
+}) {
   const inner = (
-    <div className="bg-surface border border-line p-5 hover:border-gold/50 transition-colors">
-      <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold">{label}</p>
-      <p className="text-3xl font-serif text-green mt-2">{value}</p>
+    <div
+      className={`bg-surface border p-5 transition-colors ${
+        alert ? "border-red hover:border-red" : "border-line hover:border-gold/50"
+      }`}
+    >
+      <p className={`text-[10.5px] font-semibold tracking-widest uppercase ${alert ? "text-red" : "text-gold"}`}>
+        {label}
+      </p>
+      <p className={`text-3xl font-serif mt-2 ${alert ? "text-red" : "text-green"}`}>{value}</p>
     </div>
   );
   return href ? <Link href={href}>{inner}</Link> : inner;
@@ -40,6 +56,7 @@ export default async function DashboardPage() {
     { data: visitsThisMonth },
     { data: allOpenMaintenance },
     { data: allOpenRequests },
+    { count: openEmergencyCount },
   ] = await Promise.all([
     supabase.from("properties").select("id", { count: "exact", head: true }),
     supabase.from("clients").select("id", { count: "exact", head: true }),
@@ -78,6 +95,7 @@ export default async function DashboardPage() {
       .from("requests")
       .select("property_id, type, status")
       .not("status", "in", "(completed,fulfilled,cancelled,declined)"),
+    supabase.from("emergency_incidents").select("id", { count: "exact", head: true }).neq("status", "resolved"),
   ]);
 
   // Roll up, per property: visits scheduled this month vs. what the plan tier
@@ -114,11 +132,17 @@ export default async function DashboardPage() {
       <p className="text-[11px] font-semibold tracking-widest uppercase text-gold">Overview</p>
       <h1 className="text-2xl font-serif text-green mt-1 mb-6">Welcome back, {staff.name.split(" ")[0]}</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <StatCard label="Properties" value={propertiesCount ?? 0} href="/properties" />
         <StatCard label="Clients" value={clientsCount ?? 0} href="/clients" />
         <StatCard label="Visits Today" value={todaysVisitsCount ?? 0} href="/visits" />
         <StatCard label="Low Float Accounts" value={lowFloat?.length ?? 0} href="/billing" />
+        <StatCard
+          label="Open Emergencies"
+          value={openEmergencyCount ?? 0}
+          href="/emergency"
+          alert={(openEmergencyCount ?? 0) > 0}
+        />
       </div>
 
       <section className="bg-surface border border-line p-5 mb-6">

@@ -32,7 +32,7 @@ export default async function VisitsPage() {
     supabase
       .from("visits")
       .select(
-        "id, type, scheduled_at, checked_in_at, checked_out_at, cancelled_at, cancel_reason, reschedule_reason, staff_id, properties(nickname, address), staff(name)"
+        "id, type, scheduled_at, checked_in_at, checked_out_at, cancelled_at, cancel_reason, reschedule_reason, staff_id, second_staff_id, notes, recommendations, properties(nickname, address), staff:staff_id(name), second_staff:second_staff_id(name)"
       )
       .order("scheduled_at", { ascending: false })
       .limit(50),
@@ -67,15 +67,7 @@ export default async function VisitsPage() {
             <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Completed</p>
             <div className="bg-surface border border-line divide-y divide-line">
               {completed.slice(0, 10).map((v: any) => (
-                <div key={v.id} className="px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-ink">{typeLabel(v.type)}</p>
-                    <p className="text-xs text-ink/50 mt-0.5">
-                      {v.properties?.nickname || v.properties?.address} · {v.staff?.name ?? "No staff logged"}
-                    </p>
-                  </div>
-                  <p className="text-xs text-ink/50">{fmt(v.checked_out_at)}</p>
-                </div>
+                <VisitRow key={v.id} visit={v} staffList={staffList ?? []} TYPES={TYPES} completed />
               ))}
               {!completed.length && <p className="px-4 py-6 text-sm text-ink/50">No completed visits yet.</p>}
             </div>

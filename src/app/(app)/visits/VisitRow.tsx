@@ -9,9 +9,15 @@ type Visit = {
   type: string | null;
   scheduled_at: string | null;
   checked_in_at: string | null;
+  checked_out_at?: string | null;
   staff_id: string | null;
+  second_staff_id?: string | null;
+  notes?: string | null;
+  recommendations?: string | null;
   reschedule_reason: string | null;
   properties?: { nickname: string | null; address: string } | null;
+  staff?: { name: string } | null;
+  second_staff?: { name: string } | null;
 };
 
 function typeLabel(type: string | null, TYPES: { value: string; label: string }[]) {
@@ -27,14 +33,17 @@ export function VisitRow({
   visit,
   staffList,
   TYPES,
+  completed = false,
 }: {
   visit: Visit;
   staffList: { id: string; name: string }[];
   TYPES: { value: string; label: string }[];
+  completed?: boolean;
 }) {
   const router = useRouter();
   const [rescheduling, setRescheduling] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,8 +51,16 @@ export function VisitRow({
     e.preventDefault();
     setError(null);
     const staff_id = (e.currentTarget.elements.namedItem("staff_id") as HTMLSelectElement).value || null;
+    const second_staff_id = (e.currentTarget.elements.namedItem("second_staff_id") as HTMLSelectElement).value || null;
+    if (second_staff_id && second_staff_id === staff_id) {
+      setError("The second staff member must be different from the first.");
+      return;
+    }
     const supabase = createClient();
-    const { error: updateError } = await supabase.from("visits").update({ staff_id }).eq("id", visit.id);
+    const { error: updateError } = await supabase
+      .from("visits")
+      .update({ staff_id, second_staff_id })
+      .eq("id", visit.id);
     if (updateError) setError(updateError.message);
     else router.refresh();
   }
@@ -93,58 +110,118 @@ export function VisitRow({
     router.refresh();
   }
 
+  async function handleSaveNotes(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const notes = (e.currentTarget.elements.namedItem("notes") as HTMLTextAreaElement).value || null;
+    const recommendations = (e.currentTarget.elements.namedItem("recommendations") as HTMLTextAreaElement).value || null;
+    setSaving(true);
+    const supabase = createClient();
+    const { error: updateError } = await supabase.from("visits").update({ notes, recommendations }).eq("id", visit.id);
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setEditingNotes(false);
+    router.refresh();
+  }
+
+  const staffLine = [visit.staff?.name, visit.second_staff?.name].filter(Boolean).join(" & ") || "No staff logged";
+
   return (
     <div className="px-4 py-3">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-ink">{typeLabel(visit.type, TYPES)}</p>
           <p className="text-xs text-ink/50 mt-0.5">
-            {visit.properties?.nickname || visit.properties?.address} · {fmt(visit.scheduled_at)}
-            {visit.checked_in_at ? " · Checked in" : ""}
+            {visit.properties?.nickname || visit.properties?.address} ·{" "}
+            {completed ? fmt(visit.checked_out_at ?? null) : fmt(visit.scheduled_at)}
+            {!completed && visit.checked_in_at ? " · Checked in" : ""}
+            {completed ? ` · ${staffLine}` : ""}
           </p>
           {visit.reschedule_reason && (
             <p className="text-xs text-gold/80 mt-0.5">Rescheduled: {visit.reschedule_reason}</p>
           )}
         </div>
-        <form onSubmit={handleAssign} className="flex items-center gap-2 shrink-0">
-          <select
-            name="staff_id"
-            defaultValue={visit.staff_id ?? ""}
-            className="border border-line bg-parchment text-xs px-2 py-1.5"
-          >
-            <option value="">Unassigned</option>
-            {staffList.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="text-xs text-green font-medium hover:underline whitespace-nowrap">
-            Save
-          </button>
-        </form>
+        {!completed && (
+          <form onSubmit={handleAssign} className="flex items-center gap-1.5 shrink-0">
+            <select
+              name="staff_id"
+              defaultValue={visit.staff_id ?? ""}
+              className="border border-line bg-parchment text-xs px-2 py-1.5"
+            >
+              <option value="">Unassigned</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-ink/40">+</span>
+            <select
+              name="second_staff_id"
+              defaultValue={visit.second_staff_id ?? ""}
+              className="border border-line bg-parchment text-xs px-2 py-1.5"
+              title="Second staff member (two-person visit policy)"
+            >
+              <option value="">2nd (none)</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="text-xs text-green font-medium hover:underline whitespace-nowrap">
+              Save
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="flex items-center gap-3 mt-2">
+        {!completed && (
+          <>
+            <button
+              onClick={() => {
+                setRescheduling((v) => !v);
+                setCancelling(false);
+                setEditingNotes(false);
+              }}
+              className="text-xs text-ink/60 font-medium hover:underline"
+            >
+              {rescheduling ? "Close" : "Reschedule"}
+            </button>
+            <button
+              onClick={() => {
+                setCancelling((v) => !v);
+                setRescheduling(false);
+                setEditingNotes(false);
+              }}
+              className="text-xs text-red font-medium hover:underline"
+            >
+              {cancelling ? "Close" : "Cancel Visit"}
+            </button>
+          </>
+        )}
         <button
           onClick={() => {
-            setRescheduling((v) => !v);
+            setEditingNotes((v) => !v);
+            setRescheduling(false);
             setCancelling(false);
           }}
           className="text-xs text-ink/60 font-medium hover:underline"
         >
-          {rescheduling ? "Close" : "Reschedule"}
-        </button>
-        <button
-          onClick={() => {
-            setCancelling((v) => !v);
-            setRescheduling(false);
-          }}
-          className="text-xs text-red font-medium hover:underline"
-        >
-          {cancelling ? "Close" : "Cancel Visit"}
+          {editingNotes ? "Close" : visit.notes || visit.recommendations ? "Edit Notes" : "Add Notes"}
         </button>
       </div>
+
+      {!editingNotes && (visit.notes || visit.recommendations) && (
+        <div className="mt-2 text-xs text-ink/70 space-y-1">
+          {visit.notes && <p>{visit.notes}</p>}
+          {visit.recommendations && <p className="text-gold/90">Recommendation: {visit.recommendations}</p>}
+        </div>
+      )}
 
       {error && <div className="text-xs text-red bg-red/5 border border-red/20 px-3 py-2 mt-2">{error}</div>}
 
@@ -196,6 +273,38 @@ export function VisitRow({
             className="text-xs bg-red text-parchment font-medium px-3 py-1.5 disabled:opacity-60"
           >
             {saving ? "Cancelling..." : "Confirm Cancellation"}
+          </button>
+        </form>
+      )}
+
+      {editingNotes && (
+        <form onSubmit={handleSaveNotes} className="mt-2 space-y-2">
+          <div>
+            <label className="block text-[10px] text-ink/50 mb-1">Visit Notes</label>
+            <textarea
+              name="notes"
+              rows={2}
+              defaultValue={visit.notes ?? ""}
+              className="w-full border border-line bg-parchment text-xs px-2 py-1.5"
+              placeholder="What did the coordinator observe on this visit?"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] text-ink/50 mb-1">Recommendations</label>
+            <textarea
+              name="recommendations"
+              rows={2}
+              defaultValue={visit.recommendations ?? ""}
+              className="w-full border border-line bg-parchment text-xs px-2 py-1.5"
+              placeholder="Anything the client should know or approve?"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="text-xs bg-green text-parchment font-medium px-3 py-1.5 disabled:opacity-60"
+          >
+            {saving ? "Saving..." : "Save Notes"}
           </button>
         </form>
       )}

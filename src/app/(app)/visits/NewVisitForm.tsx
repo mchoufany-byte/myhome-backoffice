@@ -31,11 +31,16 @@ export function NewVisitForm({
     const property_id = (form.elements.namedItem("property_id") as HTMLSelectElement).value;
     const type = (form.elements.namedItem("type") as HTMLSelectElement).value;
     const staff_id = (form.elements.namedItem("staff_id") as HTMLSelectElement).value || null;
+    const second_staff_id = (form.elements.namedItem("second_staff_id") as HTMLSelectElement).value || null;
     const date = (form.elements.namedItem("date") as HTMLInputElement).value;
     const time = (form.elements.namedItem("time") as HTMLInputElement).value;
 
     if (!property_id || !type || !date) {
       setError("Property, type, and date are required.");
+      return;
+    }
+    if (second_staff_id && second_staff_id === staff_id) {
+      setError("The second staff member must be different from the first.");
       return;
     }
 
@@ -48,6 +53,7 @@ export function NewVisitForm({
       property_id,
       type,
       staff_id,
+      second_staff_id,
       scheduled_at,
     });
 
@@ -90,6 +96,17 @@ export function NewVisitForm({
         <label className="block text-xs text-ink/60 mb-1">Assign To</label>
         <select name="staff_id" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm">
           <option value="">Unassigned</option>
+          {staffList.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs text-ink/60 mb-1">Second Staff (key-holding visit policy)</label>
+        <select name="second_staff_id" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm">
+          <option value="">None</option>
           {staffList.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}

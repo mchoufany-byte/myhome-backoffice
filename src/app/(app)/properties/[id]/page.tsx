@@ -5,6 +5,8 @@ import { requireSection } from "@/lib/guard";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
 import { PropertyInfoCard } from "./PropertyInfoCard";
 import { PropertyGallery } from "./PropertyGallery";
+import { HealthReportCard } from "./HealthReportCard";
+import { KeyCustodyLog } from "./KeyCustodyLog";
 import { DeleteEntityButton } from "@/components/DeleteEntityButton";
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
@@ -36,6 +38,9 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     { data: openRequests },
     { data: clients },
     { data: photos },
+    { data: healthScores },
+    { data: keyEvents },
+    { data: staffList },
   ] = await Promise.all([
     supabase
       .from("visits")
@@ -72,6 +77,21 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
       .select("id, url, caption")
       .eq("property_id", params.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("health_scores")
+      .select(
+        "id, overall_score, water_score, hvac_score, electrical_score, humidity_score, cleanliness_score, security_score, maintenance_score, report_period, recommendations, filed_at"
+      )
+      .eq("property_id", params.id)
+      .order("filed_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("key_custody_events")
+      .select("id, action, purpose, expected_return_at, logged_at, notes, staff(name)")
+      .eq("property_id", params.id)
+      .order("logged_at", { ascending: false })
+      .limit(10),
+    supabase.from("staff").select("id, name").eq("is_active", true).order("name", { ascending: true }),
   ]);
 
   const tier = planTierOf(property.plan_tier);
@@ -80,6 +100,11 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
   const doneThisMonth = visitsThisMonth ?? 0;
   const visitsRemaining = quota !== null ? Math.max(quota - doneThisMonth, 0) : null;
   const openItemsCount = (openMaintenance?.length ?? 0) + (openRequests?.length ?? 0);
+
+  const latestHealthScore = (healthScores?.[0] as any) ?? null;
+  const mostRecentKeyEvent = (keyEvents?.[0] as any) ?? null;
+  const isOutWithStaff =
+    mostRecentKeyEvent?.action === "checkout" ? mostRecentKeyEvent.staff?.name ?? "a staff member" : null;
 
   return (
     <div className="p-8 max-w-3xl">
@@ -99,6 +124,15 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
       />
 
       <PropertyGallery propertyId={property.id} photos={photos ?? []} />
+
+      <HealthReportCard propertyId={property.id} latest={latestHealthScore} />
+
+      <KeyCustodyLog
+        propertyId={property.id}
+        events={keyEvents ?? []}
+        staffList={staffList ?? []}
+        isOutWithStaff={isOutWithStaff}
+      />
 
       {tier && tierInfo && (
         <div className="bg-surface border border-line p-4 mb-8">
