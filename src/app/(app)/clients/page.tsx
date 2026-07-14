@@ -19,7 +19,7 @@ export default async function ClientsPage() {
 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
-          <div className="bg-surface border border-line">
+          <div className="bg-surface border border-line overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left">

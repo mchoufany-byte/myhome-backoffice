@@ -5,9 +5,11 @@ import { requireSection } from "@/lib/guard";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
 import { PropertyInfoCard } from "./PropertyInfoCard";
 import { PropertyGallery } from "./PropertyGallery";
+import { DeleteEntityButton } from "@/components/DeleteEntityButton";
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  await requireSection("properties");
+  const currentStaff = await requireSection("properties");
+  const isOwner = currentStaff.role === "owner";
   const supabase = createClient();
 
   const { data: property } = await supabase
@@ -187,6 +189,8 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
           </div>
         </section>
       </div>
+
+      <DeleteEntityButton table="properties" id={property.id} isOwner={isOwner} redirectTo="/properties" entityLabel="property" />
     </div>
   );
 }

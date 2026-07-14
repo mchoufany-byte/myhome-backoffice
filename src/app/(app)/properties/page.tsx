@@ -22,7 +22,7 @@ export default async function PropertiesPage() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-surface border border-line">
+          <div className="bg-surface border border-line overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left">

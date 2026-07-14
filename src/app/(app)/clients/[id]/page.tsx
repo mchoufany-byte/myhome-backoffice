@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/guard";
 import { ClientInfoCard } from "./ClientInfoCard";
+import { DeleteEntityButton } from "@/components/DeleteEntityButton";
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
-  await requireSection("clients");
+  const currentStaff = await requireSection("clients");
+  const isOwner = currentStaff.role === "owner";
   const supabase = createClient();
 
   const { data: client } = await supabase
@@ -51,6 +53,8 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
         ))}
         {!properties?.length && <p className="px-4 py-3 text-sm text-ink/50">No properties on file.</p>}
       </div>
+
+      <DeleteEntityButton table="clients" id={client.id} isOwner={isOwner} redirectTo="/clients" entityLabel="client" />
     </div>
   );
 }
