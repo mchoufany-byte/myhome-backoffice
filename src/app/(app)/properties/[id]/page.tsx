@@ -129,7 +129,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
 
       <KeyCustodyLog
         propertyId={property.id}
-        events={keyEvents ?? []}
+        events={(keyEvents ?? []) as any}
         staffList={staffList ?? []}
         isOutWithStaff={isOutWithStaff}
       />
