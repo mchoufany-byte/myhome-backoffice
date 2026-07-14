@@ -98,6 +98,11 @@ export default async function DashboardPage() {
     supabase.from("emergency_incidents").select("id", { count: "exact", head: true }).neq("status", "resolved"),
   ]);
 
+  const { count: billingAtRiskCount } = await supabase
+    .from("properties")
+    .select("id", { count: "exact", head: true })
+    .in("billing_status", ["grace_period", "lapsed"]);
+
   // Roll up, per property: visits scheduled this month vs. what the plan tier
   // promises, plus any open maintenance/requests -- answers "what's left
   // undone from the package" instead of just "which package do they have."
@@ -132,7 +137,7 @@ export default async function DashboardPage() {
       <p className="text-[11px] font-semibold tracking-widest uppercase text-gold">Overview</p>
       <h1 className="text-2xl font-serif text-green mt-1 mb-6">Welcome back, {staff.name.split(" ")[0]}</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
         <StatCard label="Properties" value={propertiesCount ?? 0} href="/properties" />
         <StatCard label="Clients" value={clientsCount ?? 0} href="/clients" />
         <StatCard label="Visits Today" value={todaysVisitsCount ?? 0} href="/visits" />
@@ -142,6 +147,12 @@ export default async function DashboardPage() {
           value={openEmergencyCount ?? 0}
           href="/emergency"
           alert={(openEmergencyCount ?? 0) > 0}
+        />
+        <StatCard
+          label="Billing At Risk"
+          value={billingAtRiskCount ?? 0}
+          href="/properties"
+          alert={(billingAtRiskCount ?? 0) > 0}
         />
       </div>
 

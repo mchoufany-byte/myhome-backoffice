@@ -3,20 +3,25 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/guard";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
+import { getRoles, canDeleteRole } from "@/lib/roles";
 import { PropertyInfoCard } from "./PropertyInfoCard";
 import { PropertyGallery } from "./PropertyGallery";
 import { HealthReportCard } from "./HealthReportCard";
 import { KeyCustodyLog } from "./KeyCustodyLog";
+import { BillingStatusCard } from "./BillingStatusCard";
 import { DeleteEntityButton } from "@/components/DeleteEntityButton";
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
   const currentStaff = await requireSection("properties");
-  const isOwner = currentStaff.role === "owner";
   const supabase = createClient();
+  const roles = await getRoles(supabase);
+  const canDelete = canDeleteRole(roles, currentStaff.role);
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, nickname, address, zone, plan_tier, status, key_custody, client_id, clients(id, name, email, phone)")
+    .select(
+      "id, nickname, address, zone, plan_tier, status, key_custody, client_id, billing_status, lapsed_at, clients(id, name, email, phone)"
+    )
     .eq("id", params.id)
     .single();
 
@@ -125,6 +130,12 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
 
       <PropertyGallery propertyId={property.id} photos={photos ?? []} />
 
+      <BillingStatusCard
+        propertyId={property.id}
+        billingStatus={property.billing_status ?? "active"}
+        lapsedAt={property.lapsed_at}
+      />
+
       <HealthReportCard propertyId={property.id} latest={latestHealthScore} />
 
       <KeyCustodyLog
@@ -224,7 +235,14 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
         </section>
       </div>
 
-      <DeleteEntityButton table="properties" id={property.id} isOwner={isOwner} redirectTo="/properties" entityLabel="property" />
+      <DeleteEntityButton
+        table="properties"
+        id={property.id}
+        canDelete={canDelete}
+        redirectTo="/properties"
+        entityLabel="property"
+        currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+      />
     </div>
   );
 }

@@ -15,7 +15,9 @@ export type Section =
   | "documents"
   | "emergency"
   | "arrival_concierge"
-  | "renewals";
+  | "renewals"
+  | "analytics"
+  | "audit_log";
 
 export const ALL_SECTIONS: Section[] = [
   "dashboard",
@@ -29,6 +31,8 @@ export const ALL_SECTIONS: Section[] = [
   "emergency",
   "arrival_concierge",
   "renewals",
+  "analytics",
+  "audit_log",
 ];
 
 export const SECTION_LABELS: Record<Section, string> = {
@@ -43,9 +47,11 @@ export const SECTION_LABELS: Record<Section, string> = {
   emergency: "Emergency",
   arrival_concierge: "Arrival Concierge",
   renewals: "Renewals",
+  analytics: "Analytics",
+  audit_log: "Audit Log",
 };
 
-export type RoleDef = { key: string; label: string; is_system: boolean };
+export type RoleDef = { key: string; label: string; is_system: boolean; can_delete: boolean };
 
 // role_key -> list of sections it can see
 export type AccessMap = Record<string, Section[]>;
@@ -55,8 +61,16 @@ type SupabaseLike = {
 };
 
 export async function getRoles(supabase: SupabaseLike): Promise<RoleDef[]> {
-  const { data } = await supabase.from("custom_roles").select("key, label, is_system").order("label", { ascending: true });
+  const { data } = await supabase
+    .from("custom_roles")
+    .select("key, label, is_system, can_delete")
+    .order("label", { ascending: true });
   return (data as RoleDef[]) ?? [];
+}
+
+export function canDeleteRole(roles: RoleDef[], role: string | null | undefined): boolean {
+  if (!role) return false;
+  return roles.find((r) => r.key === role)?.can_delete ?? false;
 }
 
 export async function getAccessMap(supabase: SupabaseLike): Promise<AccessMap> {

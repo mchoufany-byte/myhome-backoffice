@@ -16,6 +16,8 @@ const NAV_ITEMS: { href: string; label: string; section: Section }[] = [
   { href: "/billing", label: "Billing & Float", section: "billing" },
   { href: "/documents", label: "Documents", section: "documents" },
   { href: "/staff", label: "Staff", section: "staff" },
+  { href: "/analytics", label: "Analytics", section: "analytics" },
+  { href: "/audit-log", label: "Audit Log", section: "audit_log" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

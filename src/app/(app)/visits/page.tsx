@@ -32,7 +32,7 @@ export default async function VisitsPage() {
     supabase
       .from("visits")
       .select(
-        "id, type, scheduled_at, checked_in_at, checked_out_at, cancelled_at, cancel_reason, reschedule_reason, staff_id, second_staff_id, notes, recommendations, properties(nickname, address), staff:staff_id(name), second_staff:second_staff_id(name)"
+        "id, type, scheduled_at, checked_in_at, checked_out_at, cancelled_at, cancel_reason, reschedule_reason, staff_id, second_staff_id, notes, recommendations, inspection_checklist, properties(nickname, address), staff:staff_id(name), second_staff:second_staff_id(name)"
       )
       .order("scheduled_at", { ascending: false })
       .limit(50),

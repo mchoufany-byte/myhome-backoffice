@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireSection } from "@/lib/guard";
+import { getRoles, canDeleteRole } from "@/lib/roles";
 import { ClientInfoCard } from "./ClientInfoCard";
 import { DeleteEntityButton } from "@/components/DeleteEntityButton";
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
   const currentStaff = await requireSection("clients");
-  const isOwner = currentStaff.role === "owner";
   const supabase = createClient();
+  const roles = await getRoles(supabase);
+  const canDelete = canDeleteRole(roles, currentStaff.role);
 
   const { data: client } = await supabase
     .from("clients")
@@ -54,7 +56,14 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
         {!properties?.length && <p className="px-4 py-3 text-sm text-ink/50">No properties on file.</p>}
       </div>
 
-      <DeleteEntityButton table="clients" id={client.id} isOwner={isOwner} redirectTo="/clients" entityLabel="client" />
+      <DeleteEntityButton
+        table="clients"
+        id={client.id}
+        canDelete={canDelete}
+        redirectTo="/clients"
+        entityLabel="client"
+        currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+      />
     </div>
   );
 }

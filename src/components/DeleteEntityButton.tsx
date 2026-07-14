@@ -3,26 +3,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 export function DeleteEntityButton({
   table,
   id,
-  isOwner,
+  canDelete,
   redirectTo,
   entityLabel,
+  currentStaff,
 }: {
   table: string;
   id: string;
-  isOwner: boolean;
+  canDelete: boolean;
   redirectTo: string;
   entityLabel: string;
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOwner) return null;
+  if (!canDelete) return null;
 
   async function handleDelete() {
     setDeleting(true);
@@ -38,6 +41,7 @@ export function DeleteEntityButton({
       );
       return;
     }
+    await logAudit(supabase, currentStaff, "delete", table, id, `Deleted ${entityLabel}`);
     router.push(redirectTo);
     router.refresh();
   }

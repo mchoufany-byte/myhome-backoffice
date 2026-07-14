@@ -26,6 +26,7 @@ function RoleRow({
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<Section>>(new Set(sections));
+  const [canDelete, setCanDelete] = useState(role.can_delete);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -47,6 +48,13 @@ function RoleRow({
     setError(null);
     setSaved(false);
     const supabase = createClient();
+
+    const { error: roleError } = await supabase.from("custom_roles").update({ can_delete: canDelete }).eq("key", role.key);
+    if (roleError) {
+      setSaving(false);
+      setError(roleError.message);
+      return;
+    }
 
     const { error: delError } = await supabase.from("role_section_access").delete().eq("role_key", role.key);
     if (delError) {
@@ -138,6 +146,11 @@ function RoleRow({
           </label>
         ))}
       </div>
+
+      <label className="flex items-center gap-1.5 text-xs text-ink/80 cursor-pointer mb-3 pt-3 border-t border-line">
+        <input type="checkbox" checked={canDelete} onChange={() => setCanDelete((v) => !v)} />
+        Can delete clients &amp; properties
+      </label>
 
       <div className="flex items-center gap-3">
         <button

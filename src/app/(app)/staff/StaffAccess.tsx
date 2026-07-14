@@ -3,8 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
-export function StaffAccess({ staffId, isActive, isOwner }: { staffId: string; isActive: boolean; isOwner: boolean }) {
+export function StaffAccess({
+  staffId,
+  staffName,
+  isActive,
+  isOwner,
+  currentStaff,
+}: {
+  staffId: string;
+  staffName: string;
+  isActive: boolean;
+  isOwner: boolean;
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -20,6 +33,14 @@ export function StaffAccess({ staffId, isActive, isOwner }: { staffId: string; i
       setError(updateError.message);
       return;
     }
+    await logAudit(
+      supabase,
+      currentStaff,
+      isActive ? "deactivate" : "reactivate",
+      "staff",
+      staffId,
+      `${isActive ? "Deactivated" : "Reactivated"} ${staffName}`
+    );
     router.refresh();
   }
 
@@ -33,6 +54,7 @@ export function StaffAccess({ staffId, isActive, isOwner }: { staffId: string; i
       setError(deleteError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "delete", "staff", staffId, `Deleted ${staffName}`);
     router.refresh();
   }
 

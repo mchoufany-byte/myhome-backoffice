@@ -3,24 +3,30 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
+import { requireStaff } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function markInvoicePaid(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
   const id = String(formData.get("id") ?? "");
   const paid_from = String(formData.get("paid_from") ?? "") || null;
   if (!id) return;
 
   await supabase.from("client_invoices").update({ status: "paid", paid_at: new Date().toISOString(), paid_from }).eq("id", id);
+  await logAudit(supabase, staff, "mark_paid", "client_invoices", id, `Marked paid via ${paid_from ?? "unspecified"}`);
   revalidatePath("/billing/invoices");
   revalidatePath(`/billing/invoices/${id}`);
 }
 
 export async function voidInvoice(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   await supabase.from("client_invoices").update({ status: "void" }).eq("id", id);
+  await logAudit(supabase, staff, "void", "client_invoices", id, "Invoice voided");
   revalidatePath("/billing/invoices");
   revalidatePath(`/billing/invoices/${id}`);
 }
@@ -35,6 +41,7 @@ export async function voidInvoice(formData: FormData) {
 // every client's invoice by hand.
 export async function generateMonthlyInvoices() {
   const supabase = createClient();
+  const staff = await requireStaff();
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -135,6 +142,17 @@ export async function generateMonthlyInvoices() {
   }
   if (renewalIdsToMark.length) {
     await supabase.from("renewals").update({ fee_invoiced: true }).in("id", renewalIdsToMark);
+  }
+
+  if (createdCount) {
+    await logAudit(
+      supabase,
+      staff,
+      "generate_invoices",
+      "client_invoices",
+      null,
+      `Generated ${createdCount} invoice(s) for ${period}`
+    );
   }
 
   revalidatePath("/billing/invoices");

@@ -73,7 +73,13 @@ export default async function StaffPage() {
                         <p className="text-xs text-ink/50 mt-0.5">{s.phone ?? "—"}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <StaffAccess staffId={s.id} isActive={active} isOwner={isOwner} />
+                        <StaffAccess
+                          staffId={s.id}
+                          staffName={s.name}
+                          isActive={active}
+                          isOwner={isOwner}
+                          currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+                        />
                       </td>
                     </tr>
                   );

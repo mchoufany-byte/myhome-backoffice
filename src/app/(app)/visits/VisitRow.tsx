@@ -14,11 +14,23 @@ type Visit = {
   second_staff_id?: string | null;
   notes?: string | null;
   recommendations?: string | null;
+  inspection_checklist?: Record<string, string> | null;
   reschedule_reason: string | null;
   properties?: { nickname: string | null; address: string } | null;
   staff?: { name: string } | null;
   second_staff?: { name: string } | null;
 };
+
+const CHECKLIST_ITEMS: { key: string; label: string }[] = [
+  { key: "water", label: "Water / plumbing" },
+  { key: "hvac", label: "AC / heating" },
+  { key: "electrical", label: "Electrical" },
+  { key: "doors_windows_seals", label: "Doors, windows & seals" },
+  { key: "mailbox_mail", label: "Mailbox / mail" },
+  { key: "pest_signs", label: "Signs of pests" },
+  { key: "generator_autostart", label: "Generator auto-start" },
+  { key: "mold_leak_signs", label: "Signs of mold or leaks" },
+];
 
 function typeLabel(type: string | null, TYPES: { value: string; label: string }[]) {
   return TYPES.find((t) => t.value === type)?.label ?? type ?? "Visit";
@@ -46,6 +58,8 @@ export function VisitRow({
   const [editingNotes, setEditingNotes] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<Record<string, string>>(visit.inspection_checklist ?? {});
+  const isInspection = visit.type === "inspection";
 
   async function handleAssign(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -117,7 +131,9 @@ export function VisitRow({
     const recommendations = (e.currentTarget.elements.namedItem("recommendations") as HTMLTextAreaElement).value || null;
     setSaving(true);
     const supabase = createClient();
-    const { error: updateError } = await supabase.from("visits").update({ notes, recommendations }).eq("id", visit.id);
+    const patch: Record<string, unknown> = { notes, recommendations };
+    if (isInspection) patch.inspection_checklist = checklist;
+    const { error: updateError } = await supabase.from("visits").update(patch).eq("id", visit.id);
     setSaving(false);
     if (updateError) {
       setError(updateError.message);
@@ -216,10 +232,28 @@ export function VisitRow({
         </button>
       </div>
 
-      {!editingNotes && (visit.notes || visit.recommendations) && (
+      {!editingNotes && (visit.notes || visit.recommendations || (isInspection && visit.inspection_checklist)) && (
         <div className="mt-2 text-xs text-ink/70 space-y-1">
           {visit.notes && <p>{visit.notes}</p>}
           {visit.recommendations && <p className="text-gold/90">Recommendation: {visit.recommendations}</p>}
+          {isInspection && visit.inspection_checklist && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {CHECKLIST_ITEMS.map((item) => {
+                const v = visit.inspection_checklist?.[item.key];
+                if (!v) return null;
+                return (
+                  <span
+                    key={item.key}
+                    className={`text-[10px] px-1.5 py-0.5 border ${
+                      v === "issue" ? "border-red text-red" : "border-line text-ink/50"
+                    }`}
+                  >
+                    {item.label}: {v === "ok" ? "OK" : v === "issue" ? "Issue" : "N/A"}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -279,6 +313,26 @@ export function VisitRow({
 
       {editingNotes && (
         <form onSubmit={handleSaveNotes} className="mt-2 space-y-2">
+          {isInspection && (
+            <div className="border border-line p-2 space-y-1.5">
+              <p className="text-[10px] text-ink/50 uppercase tracking-wide mb-1">Inspection Checklist</p>
+              {CHECKLIST_ITEMS.map((item) => (
+                <div key={item.key} className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-ink/80">{item.label}</span>
+                  <select
+                    value={checklist[item.key] ?? ""}
+                    onChange={(e) => setChecklist((prev) => ({ ...prev, [item.key]: e.target.value }))}
+                    className="border border-line bg-parchment text-xs px-1.5 py-1"
+                  >
+                    <option value="">—</option>
+                    <option value="ok">OK</option>
+                    <option value="issue">Issue</option>
+                    <option value="na">N/A</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
           <div>
             <label className="block text-[10px] text-ink/50 mb-1">Visit Notes</label>
             <textarea
