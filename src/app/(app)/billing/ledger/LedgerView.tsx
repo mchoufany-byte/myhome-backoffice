@@ -46,6 +46,38 @@ function statusColor(status: string) {
   return "text-ink/60";
 }
 
+function monthLabel(ym: string) {
+  if (ym === "—") return "No date";
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
+// Buckets each entry into Advance (float deposits), Paid (money settled), or
+// Due (still owed/outstanding) for the monthly summary. Renewal/maintenance/
+// arrival fees that have already been folded into an invoice are skipped
+// here -- their value is already counted once, inside that invoice's own
+// entry, so counting the fee separately would double it.
+function bucketOf(e: LedgerEntry): "advance" | "paid" | "due" | null {
+  switch (e.type) {
+    case "float_topup":
+      return "advance";
+    case "float_draw":
+      return "paid";
+    case "invoice":
+      if (e.status === "paid") return "paid";
+      if (e.status === "void") return null;
+      return "due";
+    case "bill":
+      return e.status.startsWith("Paid") ? "paid" : "due";
+    case "renewal_fee":
+    case "maintenance_fee":
+    case "arrival_fee":
+      return e.status === "Invoiced" ? null : "due";
+    default:
+      return null;
+  }
+}
+
 export function LedgerView({
   entries,
   clients,
@@ -81,6 +113,18 @@ export function LedgerView({
 
   const total = filtered.reduce((s, e) => s + e.amount, 0);
   const pendingCount = filtered.filter((e) => e.status === "Pending invoice" || e.status === "Due").length;
+
+  const monthly = useMemo(() => {
+    const rows = new Map<string, { advance: number; paid: number; due: number }>();
+    for (const e of filtered) {
+      const bucket = bucketOf(e);
+      if (!bucket) continue;
+      const ym = e.date ? e.date.slice(0, 7) : "—";
+      if (!rows.has(ym)) rows.set(ym, { advance: 0, paid: 0, due: 0 });
+      rows.get(ym)![bucket] += e.amount;
+    }
+    return [...rows.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [filtered]);
 
   return (
     <div>
@@ -133,6 +177,43 @@ export function LedgerView({
           </div>
         </div>
       </div>
+
+      {monthly.length > 0 && (
+        <div className="bg-surface border border-line mb-6 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line text-left">
+                <th className="px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-gold">Month</th>
+                <th className="px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-gold text-right">
+                  Advance Payments
+                </th>
+                <th className="px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-gold text-right">
+                  Paid
+                </th>
+                <th className="px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-gold text-right">
+                  Due
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {monthly.map(([ym, row]) => (
+                <tr key={ym}>
+                  <td className="px-4 py-2.5 text-ink">{monthLabel(ym)}</td>
+                  <td className="px-4 py-2.5 text-right text-ink/80">
+                    {row.advance ? `$${row.advance.toFixed(2)}` : "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-green">{row.paid ? `$${row.paid.toFixed(2)}` : "—"}</td>
+                  <td className="px-4 py-2.5 text-right text-gold">{row.due ? `$${row.due.toFixed(2)}` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="px-4 py-2 text-[10.5px] text-ink/40 border-t border-line">
+            Renewal/maintenance/arrival fees already folded into an invoice aren't counted separately here — they're
+            included in that invoice's Paid/Due figure instead.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs text-ink/60">
