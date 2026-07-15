@@ -51,6 +51,8 @@ export function KeyCustodyLog({
     const purpose = (form.elements.namedItem("purpose") as HTMLInputElement)?.value || null;
     const expected_return = (form.elements.namedItem("expected_return") as HTMLInputElement)?.value || null;
 
+    if (!logging) return;
+
     if (logging === "checkout" && !staff_id) {
       setError("Pick which staff member is taking the key.");
       return;
