@@ -18,9 +18,11 @@ function slugify(label: string) {
 export function ManageServicesPanel({
   services,
   currentStaff,
+  isAdmin,
 }: {
   services: ServiceOption[];
   currentStaff?: { id: string; name: string };
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -153,13 +155,15 @@ export function ManageServicesPanel({
                   <p className="text-sm text-ink">{s.label}</p>
                   <p className="text-xs text-ink/50 mt-0.5">${Number(s.default_price).toFixed(2)}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => startEdit(s)}
-                  className="text-[11px] text-green font-medium hover:underline shrink-0"
-                >
-                  Edit
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => startEdit(s)}
+                    className="text-[11px] text-green font-medium hover:underline shrink-0"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -167,7 +171,11 @@ export function ManageServicesPanel({
         {!services.length && <p className="py-2.5 text-sm text-ink/50">No services yet.</p>}
       </div>
 
-      {!adding ? (
+      {!isAdmin && (
+        <p className="text-[10.5px] text-ink/40 mt-3">Only admins can add services or change pricing.</p>
+      )}
+
+      {isAdmin && (!adding ? (
         <button
           type="button"
           onClick={() => setAdding(true)}
@@ -216,7 +224,7 @@ export function ManageServicesPanel({
             </button>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }

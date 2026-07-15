@@ -6,6 +6,7 @@ import { ServiceOrderRow } from "./ServiceOrderRow";
 
 export default async function ServicesPage() {
   const currentStaff = await requireSection("services");
+  const isAdmin = currentStaff.role === "owner";
   const supabase = createClient();
 
   const [{ data: services }, { data: clients }, { data: properties }, { data: orders }] = await Promise.all([
@@ -91,6 +92,7 @@ export default async function ServicesPage() {
             <ManageServicesPanel
               services={(services ?? []) as any}
               currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+              isAdmin={isAdmin}
             />
           </div>
         </div>
