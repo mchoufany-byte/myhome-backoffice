@@ -133,6 +133,23 @@ export function VisitRow({
     router.refresh();
   }
 
+  async function handleComplete() {
+    setError(null);
+    setSaving(true);
+    const supabase = createClient();
+    const now = new Date().toISOString();
+    const patch: Record<string, unknown> = { checked_out_at: now };
+    if (!visit.checked_in_at) patch.checked_in_at = now;
+    const { error: updateError } = await supabase.from("visits").update(patch).eq("id", visit.id);
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    await logAudit(supabase, currentStaff, "complete", "visits", visit.id, "Marked visit complete");
+    router.refresh();
+  }
+
   async function handleSaveNotes(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -208,6 +225,13 @@ export function VisitRow({
       <div className="flex items-center gap-3 mt-2">
         {!completed && (
           <>
+            <button
+              onClick={handleComplete}
+              disabled={saving}
+              className="text-xs text-green font-medium hover:underline disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Mark Complete"}
+            </button>
             <button
               onClick={() => {
                 setRescheduling((v) => !v);
