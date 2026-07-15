@@ -57,6 +57,7 @@ export async function generateMonthlyInvoices() {
     { data: unbilledArrivals },
     { data: unbilledRenewals },
     { data: renewalTypes },
+    { data: unbilledServiceOrders },
   ] = await Promise.all([
     supabase.from("client_invoices").select("client_id").eq("billing_period", period),
     supabase.from("properties").select("id, client_id, nickname, address, plan_tier, status"),
@@ -77,6 +78,11 @@ export async function generateMonthlyInvoices() {
       .eq("status", "completed")
       .eq("fee_invoiced", false),
     supabase.from("renewal_types").select("key, label"),
+    supabase
+      .from("service_orders")
+      .select("id, client_id, description, price, quantity")
+      .eq("status", "fulfilled")
+      .eq("fee_invoiced", false),
   ]);
 
   const renewalTypeLabel = new Map((renewalTypes ?? []).map((t) => [t.key, t.label]));
@@ -89,11 +95,19 @@ export async function generateMonthlyInvoices() {
     if (!byClient.has(p.client_id)) byClient.set(p.client_id, []);
     byClient.get(p.client_id)!.push(p);
   }
+  // Service orders are billed straight to the client, not tied to an active
+  // property -- a client with no active properties but a fulfilled order
+  // still needs an entry here, or that fee would never get invoiced.
+  for (const so of unbilledServiceOrders ?? []) {
+    if (!so.client_id || alreadyInvoiced.has(so.client_id)) continue;
+    if (!byClient.has(so.client_id)) byClient.set(so.client_id, []);
+  }
 
   let createdCount = 0;
   const maintenanceIdsToMark: string[] = [];
   const arrivalIdsToMark: string[] = [];
   const renewalIdsToMark: string[] = [];
+  const serviceOrderIdsToMark: string[] = [];
 
   for (const [clientId, props] of byClient) {
     const lineItems: { description: string; amount: number }[] = [];
@@ -134,6 +148,12 @@ export async function generateMonthlyInvoices() {
       renewalIdsToMark.push(r.id);
     }
 
+    for (const so of unbilledServiceOrders ?? []) {
+      if (so.client_id !== clientId) continue;
+      lineItems.push({ description: so.description, amount: Number(so.price) * so.quantity });
+      serviceOrderIdsToMark.push(so.id);
+    }
+
     if (!lineItems.length) continue;
 
     const total = lineItems.reduce((sum, li) => sum + li.amount, 0);
@@ -156,6 +176,9 @@ export async function generateMonthlyInvoices() {
   }
   if (renewalIdsToMark.length) {
     await supabase.from("renewals").update({ fee_invoiced: true }).in("id", renewalIdsToMark);
+  }
+  if (serviceOrderIdsToMark.length) {
+    await supabase.from("service_orders").update({ fee_invoiced: true }).in("id", serviceOrderIdsToMark);
   }
 
   if (createdCount) {

@@ -9,7 +9,8 @@ export type LedgerType =
   | "float_draw"
   | "renewal_fee"
   | "maintenance_fee"
-  | "arrival_fee";
+  | "arrival_fee"
+  | "service_fee";
 
 export type LedgerEntry = {
   id: string;
@@ -31,6 +32,7 @@ const TYPE_LABEL: Record<LedgerType, string> = {
   renewal_fee: "Renewal Fee",
   maintenance_fee: "Maintenance Fee",
   arrival_fee: "Arrival Fee",
+  service_fee: "Service Order",
 };
 
 const ALL_TYPES = Object.keys(TYPE_LABEL) as LedgerType[];
@@ -72,6 +74,7 @@ function bucketOf(e: LedgerEntry): "advance" | "paid" | "due" | null {
     case "renewal_fee":
     case "maintenance_fee":
     case "arrival_fee":
+    case "service_fee":
       return e.status === "Invoiced" ? null : "due";
     default:
       return null;

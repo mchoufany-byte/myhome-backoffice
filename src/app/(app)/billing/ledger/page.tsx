@@ -17,6 +17,7 @@ export default async function BillingLedgerPage() {
     { data: renewalTypes },
     { data: maintenance },
     { data: arrivals },
+    { data: serviceOrders },
   ] = await Promise.all([
     supabase.from("clients").select("id, name, client_type, company_name").order("name", { ascending: true }),
     supabase.from("properties").select("id, client_id, nickname, address"),
@@ -33,6 +34,9 @@ export default async function BillingLedgerPage() {
     supabase
       .from("arrival_requests")
       .select("id, property_id, arrival_date, fee_amount, fee_invoiced, status, completed_at"),
+    supabase
+      .from("service_orders")
+      .select("id, client_id, description, price, quantity, status, fee_invoiced, ordered_at, fulfilled_at"),
   ]);
 
   const propertyLabel = new Map(
@@ -127,6 +131,20 @@ export default async function BillingLedgerPage() {
       detail: propertyLabel.get(a.property_id) ?? "",
       amount: Number(a.fee_amount ?? 0),
       status: a.fee_invoiced ? "Invoiced" : "Pending invoice",
+    });
+  }
+
+  for (const so of serviceOrders ?? []) {
+    if (so.status !== "fulfilled") continue;
+    entries.push({
+      id: `service-${so.id}`,
+      clientId: so.client_id,
+      date: so.fulfilled_at ?? so.ordered_at,
+      type: "service_fee",
+      label: so.description,
+      detail: so.quantity > 1 ? `x${so.quantity}` : "",
+      amount: Number(so.price ?? 0) * so.quantity,
+      status: so.fee_invoiced ? "Invoiced" : "Pending invoice",
     });
   }
 

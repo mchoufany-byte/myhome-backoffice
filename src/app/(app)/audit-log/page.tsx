@@ -19,6 +19,7 @@ const ACTION_LABEL: Record<string, string> = {
   complete: "Completed",
   assign: "Assigned",
   cancel: "Cancelled",
+  fulfill: "Fulfilled",
   reschedule: "Rescheduled",
   update_notes: "Updated Notes",
   update_status: "Updated Status",

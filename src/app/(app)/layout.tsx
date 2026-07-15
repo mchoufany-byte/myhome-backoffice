@@ -13,6 +13,7 @@ const NAV_ITEMS: { href: string; label: string; section: Section }[] = [
   { href: "/emergency", label: "Emergency", section: "emergency" },
   { href: "/arrival-concierge", label: "Arrival Concierge", section: "arrival_concierge" },
   { href: "/renewals", label: "Renewals", section: "renewals" },
+  { href: "/services", label: "Services", section: "services" },
   { href: "/billing", label: "Billing & Float", section: "billing" },
   { href: "/documents", label: "Documents", section: "documents" },
   { href: "/staff", label: "Staff", section: "staff" },
