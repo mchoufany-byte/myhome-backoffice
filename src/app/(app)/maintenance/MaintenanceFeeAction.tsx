@@ -3,13 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 function suggestFee(quoteAmount: number | null) {
   if (!quoteAmount) return "25.00";
   return Math.max(quoteAmount * 0.12, 25).toFixed(2);
 }
 
-export function MaintenanceFeeAction({ jobId, quoteAmount }: { jobId: string; quoteAmount: number | null }) {
+export function MaintenanceFeeAction({
+  jobId,
+  quoteAmount,
+  currentStaff,
+}: {
+  jobId: string;
+  quoteAmount: number | null;
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const [completing, setCompleting] = useState(false);
   const [fee, setFee] = useState(() => suggestFee(quoteAmount));
@@ -20,6 +29,10 @@ export function MaintenanceFeeAction({ jobId, quoteAmount }: { jobId: string; qu
     e.preventDefault();
     setError(null);
     const n = parseFloat(fee);
+    if (fee.trim() !== "" && (!Number.isFinite(n) || n < 0)) {
+      setError("Fee must be a number of 0 or more.");
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     const { error: updateError } = await supabase
@@ -31,6 +44,7 @@ export function MaintenanceFeeAction({ jobId, quoteAmount }: { jobId: string; qu
       setError(updateError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "complete", "maintenance_requests", jobId, "Marked completed");
     router.refresh();
   }
 
@@ -49,9 +63,10 @@ export function MaintenanceFeeAction({ jobId, quoteAmount }: { jobId: string; qu
         <input
           value={fee}
           onChange={(e) => setFee(e.target.value)}
-          onBlur={() => setFee((v) => (Number.isFinite(parseFloat(v)) ? parseFloat(v).toFixed(2) : "0.00"))}
+          onBlur={() => setFee((v) => (Number.isFinite(parseFloat(v)) ? Math.max(0, parseFloat(v)).toFixed(2) : "0.00"))}
           type="number"
           step="0.01"
+          min="0"
           className="w-24 border border-line bg-parchment text-xs px-2 py-1.5"
         />
       </div>

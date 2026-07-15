@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaff } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function scheduleVisit(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
 
   const property_id = String(formData.get("property_id") ?? "");
   const type = String(formData.get("type") ?? "");
@@ -23,15 +26,19 @@ export async function scheduleVisit(formData: FormData) {
     scheduled_at,
   });
 
+  await logAudit(supabase, staff, "create", "visits", null, `Scheduled ${type} visit`);
+
   revalidatePath("/visits");
 }
 
 export async function assignStaff(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
   const visit_id = String(formData.get("visit_id") ?? "");
   const staff_id = String(formData.get("staff_id") ?? "") || null;
   if (!visit_id) return;
 
   await supabase.from("visits").update({ staff_id }).eq("id", visit_id);
+  await logAudit(supabase, staff, "assign", "visits", visit_id, "Assigned staff to visit");
   revalidatePath("/visits");
 }

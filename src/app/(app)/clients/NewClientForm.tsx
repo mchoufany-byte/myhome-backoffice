@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PhoneField } from "@/components/PhoneField";
+import { logAudit } from "@/lib/audit";
 
-export function NewClientForm() {
+export function NewClientForm({ currentStaff }: { currentStaff?: { id: string; name: string } }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
@@ -81,6 +82,8 @@ export function NewClientForm() {
       setError(insertError.message);
       return;
     }
+
+    await logAudit(supabase, currentStaff, "create", "clients", null, `Created ${name}`);
 
     formRef.current?.reset();
     setClientType("individual");

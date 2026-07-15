@@ -28,11 +28,17 @@ type Client = {
 
 const LANGUAGE_LABEL: Record<string, string> = { EN: "English", FR: "French", AR: "Arabic" };
 
-export function ClientInfoCard({ client }: { client: Client }) {
+export function ClientInfoCard({
+  client,
+  currentStaff,
+}: {
+  client: Client;
+  currentStaff?: { id: string; name: string };
+}) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
-    return <EditClientForm client={client} onDone={() => setEditing(false)} />;
+    return <EditClientForm client={client} onDone={() => setEditing(false)} currentStaff={currentStaff} />;
   }
 
   const isCompany = client.client_type === "company";

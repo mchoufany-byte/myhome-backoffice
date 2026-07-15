@@ -44,18 +44,19 @@ function InvoiceRow({ inv }: { inv: any }) {
 }
 
 export default async function InvoicesPage() {
-  await requireSection("billing");
+  const currentStaff = await requireSection("billing");
   const supabase = createClient();
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: invoices }, { data: clients }, { data: properties }] = await Promise.all([
+  const [{ data: invoices }, { data: clients }, { data: properties }, { data: services }] = await Promise.all([
     supabase
       .from("client_invoices")
       .select("id, invoice_number, billing_period, amount, status, issued_at, due_date, paid_at, notes, clients(id, name, client_type, company_name)")
       .order("issued_at", { ascending: false }),
     supabase.from("clients").select("id, name, client_type, company_name").order("name", { ascending: true }),
     supabase.from("properties").select("id, client_id, nickname, address, plan_tier"),
+    supabase.from("services").select("key, label, default_price, is_system").order("label", { ascending: true }),
   ]);
 
   const outstanding = (invoices ?? []).filter((i: any) => i.status === "issued" && (!i.due_date || i.due_date >= today));
@@ -124,7 +125,12 @@ export default async function InvoicesPage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Issue Invoice</p>
-          <NewInvoiceForm clients={clients ?? []} properties={(properties ?? []) as any} />
+          <NewInvoiceForm
+            clients={clients ?? []}
+            properties={(properties ?? []) as any}
+            services={services ?? []}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         </div>
       </div>
     </div>

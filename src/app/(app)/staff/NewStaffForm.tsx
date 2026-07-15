@@ -4,8 +4,15 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RoleDef } from "@/lib/roles";
+import { logAudit } from "@/lib/audit";
 
-export function NewStaffForm({ roles }: { roles: RoleDef[] }) {
+export function NewStaffForm({
+  roles,
+  currentStaff,
+}: {
+  roles: RoleDef[];
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
@@ -44,6 +51,8 @@ export function NewStaffForm({ roles }: { roles: RoleDef[] }) {
       setError(insertError.message);
       return;
     }
+
+    await logAudit(supabase, currentStaff, "create", "staff", null, `Created ${name}`);
 
     formRef.current?.reset();
     router.refresh();

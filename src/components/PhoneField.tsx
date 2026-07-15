@@ -97,6 +97,9 @@ export function PhoneField({
           value={rest}
           onChange={(e) => setRest(e.target.value)}
           placeholder={placeholder ?? "71 234 567"}
+          inputMode="tel"
+          pattern="[0-9()\-\s]{6,18}"
+          title="Numbers only (spaces, dashes, and parentheses are fine), at least 6 digits."
           className="flex-1 min-w-0 border border-line bg-parchment px-2.5 py-2 text-sm"
         />
       </div>

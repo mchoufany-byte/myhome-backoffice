@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireStaff } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function createBill(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
 
   const property_id = String(formData.get("property_id") ?? "");
   const category = String(formData.get("category") ?? "");
@@ -12,7 +15,9 @@ export async function createBill(formData: FormData) {
   const billing_period = String(formData.get("billing_period") ?? "") || null;
   const amount = amountRaw ? Number(amountRaw) : null;
 
-  if (!property_id || !category || amount === null) return;
+  // Reject non-numeric and negative amounts outright -- Number("abc") is NaN,
+  // which is not null and would otherwise sail through to the database.
+  if (!property_id || !category || amount === null || !Number.isFinite(amount) || amount < 0) return;
 
   await supabase.from("bills").insert({
     property_id,
@@ -22,11 +27,14 @@ export async function createBill(formData: FormData) {
     status: "due",
   });
 
+  await logAudit(supabase, staff, "create", "bills", null, `Created ${category} bill for $${amount.toFixed(2)}`);
+
   revalidatePath("/billing");
 }
 
 export async function markBillPaid(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
   const id = String(formData.get("id") ?? "");
   const paid_from = String(formData.get("paid_from") ?? "") || null;
   if (!id) return;
@@ -57,16 +65,19 @@ export async function markBillPaid(formData: FormData) {
     });
   }
 
+  await logAudit(supabase, staff, "mark_paid", "bills", id, `Marked paid via ${paid_from ?? "unspecified"}`);
+
   revalidatePath("/billing");
 }
 
 export async function topUpFloat(formData: FormData) {
   const supabase = createClient();
+  const staff = await requireStaff();
 
   const property_id = String(formData.get("property_id") ?? "");
   const amountRaw = String(formData.get("amount") ?? "");
   const amount = amountRaw ? Number(amountRaw) : 0;
-  if (!property_id || !amount) return;
+  if (!property_id || !amount || !Number.isFinite(amount) || amount <= 0) return;
 
   const { data: existing } = await supabase
     .from("utility_float")
@@ -82,6 +93,8 @@ export async function topUpFloat(formData: FormData) {
     last_topup_amount: amount,
     last_topup_at: new Date().toISOString(),
   });
+
+  await logAudit(supabase, staff, "top_up", "utility_float", property_id, `Topped up $${amount.toFixed(2)}`);
 
   revalidatePath("/billing");
 }

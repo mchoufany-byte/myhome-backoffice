@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PhoneField } from "@/components/PhoneField";
+import { logAudit } from "@/lib/audit";
 
 type Client = {
   id: string;
@@ -27,7 +28,15 @@ type Client = {
   tax_number: string | null;
 };
 
-export function EditClientForm({ client, onDone }: { client: Client; onDone: () => void }) {
+export function EditClientForm({
+  client,
+  onDone,
+  currentStaff,
+}: {
+  client: Client;
+  onDone: () => void;
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -138,6 +147,8 @@ export function EditClientForm({ client, onDone }: { client: Client; onDone: () 
       setError(updateError.message);
       return;
     }
+
+    await logAudit(supabase, currentStaff, "update", "clients", client.id, `Updated ${name}`);
 
     router.refresh();
     onDone();

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 type HealthScore = {
   id: string;
@@ -36,7 +37,15 @@ function scoreColor(score: number | null) {
   return "text-red";
 }
 
-export function HealthReportCard({ propertyId, latest }: { propertyId: string; latest: HealthScore | null }) {
+export function HealthReportCard({
+  propertyId,
+  latest,
+  currentStaff,
+}: {
+  propertyId: string;
+  latest: HealthScore | null;
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const [filing, setFiling] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -81,6 +90,7 @@ export function HealthReportCard({ propertyId, latest }: { propertyId: string; l
       setError(insertError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "create", "health_scores", propertyId, `Filed report for ${report_period}`);
     setFiling(false);
     router.refresh();
   }

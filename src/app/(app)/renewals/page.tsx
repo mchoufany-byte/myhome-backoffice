@@ -4,10 +4,10 @@ import { RenewalRow } from "./RenewalRow";
 import { NewRenewalForm } from "./NewRenewalForm";
 
 export default async function RenewalsPage() {
-  await requireSection("renewals");
+  const currentStaff = await requireSection("renewals");
   const supabase = createClient();
 
-  const [{ data: renewals }, { data: staffList }, { data: properties }] = await Promise.all([
+  const [{ data: renewals }, { data: staffList }, { data: properties }, { data: renewalTypes }] = await Promise.all([
     supabase
       .from("renewals")
       .select(
@@ -16,6 +16,7 @@ export default async function RenewalsPage() {
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("staff").select("id, name").eq("is_active", true).order("name", { ascending: true }),
     supabase.from("properties").select("id, nickname, address").order("nickname", { ascending: true }),
+    supabase.from("renewal_types").select("key, label, is_system").order("label", { ascending: true }),
   ]);
 
   const open = (renewals ?? []).filter((r: any) => r.status !== "completed");
@@ -31,7 +32,13 @@ export default async function RenewalsPage() {
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Open ({open.length})</p>
           <div className="bg-surface border border-line divide-y divide-line mb-8">
             {open.map((r: any) => (
-              <RenewalRow key={r.id} renewal={r} staffList={staffList ?? []} />
+              <RenewalRow
+                key={r.id}
+                renewal={r}
+                staffList={staffList ?? []}
+                renewalTypes={renewalTypes ?? []}
+                currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+              />
             ))}
             {!open.length && <p className="px-4 py-6 text-sm text-ink/50">Nothing open.</p>}
           </div>
@@ -39,7 +46,13 @@ export default async function RenewalsPage() {
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Completed ({done.length})</p>
           <div className="bg-surface border border-line divide-y divide-line">
             {done.slice(0, 20).map((r: any) => (
-              <RenewalRow key={r.id} renewal={r} staffList={staffList ?? []} />
+              <RenewalRow
+                key={r.id}
+                renewal={r}
+                staffList={staffList ?? []}
+                renewalTypes={renewalTypes ?? []}
+                currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+              />
             ))}
             {!done.length && <p className="px-4 py-6 text-sm text-ink/50">Nothing completed yet.</p>}
           </div>
@@ -47,7 +60,11 @@ export default async function RenewalsPage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Log Renewal</p>
-          <NewRenewalForm properties={properties ?? []} />
+          <NewRenewalForm
+            properties={properties ?? []}
+            renewalTypes={renewalTypes ?? []}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 type KeyEvent = {
   id: string;
@@ -29,11 +30,13 @@ export function KeyCustodyLog({
   events,
   staffList,
   isOutWithStaff,
+  currentStaff,
 }: {
   propertyId: string;
   events: KeyEvent[];
   staffList: { id: string; name: string }[];
   isOutWithStaff: string | null; // name of staff currently holding the key, if any
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [logging, setLogging] = useState<"checkout" | "return" | null>(null);
@@ -67,6 +70,15 @@ export function KeyCustodyLog({
       setError(insertError.message);
       return;
     }
+    const staffName = staffList.find((s) => s.id === staff_id)?.name;
+    await logAudit(
+      supabase,
+      currentStaff,
+      logging,
+      "key_custody_events",
+      propertyId,
+      logging === "checkout" ? `Checked out to ${staffName ?? "staff"}` : "Key returned"
+    );
     setLogging(null);
     router.refresh();
   }

@@ -4,7 +4,7 @@ import { requireSection } from "@/lib/guard";
 import { NewPropertyForm } from "./NewPropertyForm";
 
 export default async function PropertiesPage() {
-  await requireSection("properties");
+  const currentStaff = await requireSection("properties");
   const supabase = createClient();
 
   const [{ data: properties }, { data: clients }] = await Promise.all([
@@ -58,7 +58,7 @@ export default async function PropertiesPage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">New Property</p>
-          <NewPropertyForm clients={clients ?? []} />
+          <NewPropertyForm clients={clients ?? []} currentStaff={{ id: currentStaff.id, name: currentStaff.name }} />
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RoleDef, AccessMap, Section } from "@/lib/roles";
+import { logAudit } from "@/lib/audit";
 
 function slugify(label: string) {
   return label
@@ -18,11 +19,13 @@ function RoleRow({
   sections,
   allSections,
   sectionLabels,
+  currentStaff,
 }: {
   role: RoleDef;
   sections: Section[];
   allSections: Section[];
   sectionLabels: Record<Section, string>;
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<Section>>(new Set(sections));
@@ -75,6 +78,7 @@ function RoleRow({
 
     setSaving(false);
     setSaved(true);
+    await logAudit(supabase, currentStaff, "update", "custom_roles", role.key, `Updated access for ${role.label}`);
     router.refresh();
   }
 
@@ -92,6 +96,7 @@ function RoleRow({
       );
       return;
     }
+    await logAudit(supabase, currentStaff, "delete", "custom_roles", role.key, `Deleted role ${role.label}`);
     router.refresh();
   }
 
@@ -171,10 +176,12 @@ function NewRoleForm({
   allSections,
   sectionLabels,
   existingKeys,
+  currentStaff,
 }: {
   allSections: Section[];
   sectionLabels: Record<Section, string>;
   existingKeys: string[];
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [label, setLabel] = useState("");
@@ -230,6 +237,8 @@ function NewRoleForm({
         return;
       }
     }
+
+    await logAudit(supabase, currentStaff, "create", "custom_roles", finalKey, `Created role ${label.trim()}`);
 
     setSaving(false);
     setLabel("");
@@ -297,11 +306,13 @@ export function RolesManager({
   initialAccessMap,
   allSections,
   sectionLabels,
+  currentStaff,
 }: {
   initialRoles: RoleDef[];
   initialAccessMap: AccessMap;
   allSections: Section[];
   sectionLabels: Record<Section, string>;
+  currentStaff?: { id: string; name: string };
 }) {
   return (
     <div className="grid md:grid-cols-3 gap-8">
@@ -313,12 +324,18 @@ export function RolesManager({
             sections={initialAccessMap[role.key] ?? []}
             allSections={allSections}
             sectionLabels={sectionLabels}
+            currentStaff={currentStaff}
           />
         ))}
       </div>
       <div>
         <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">New Role</p>
-        <NewRoleForm allSections={allSections} sectionLabels={sectionLabels} existingKeys={initialRoles.map((r) => r.key)} />
+        <NewRoleForm
+          allSections={allSections}
+          sectionLabels={sectionLabels}
+          existingKeys={initialRoles.map((r) => r.key)}
+          currentStaff={currentStaff}
+        />
       </div>
     </div>
   );

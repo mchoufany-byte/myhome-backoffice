@@ -25,7 +25,7 @@ function typeLabel(type: string | null) {
 }
 
 export default async function VisitsPage() {
-  await requireSection("visits");
+  const currentStaff = await requireSection("visits");
   const supabase = createClient();
 
   const [{ data: visits }, { data: properties }, { data: staffList }] = await Promise.all([
@@ -57,7 +57,13 @@ export default async function VisitsPage() {
             </p>
             <div className="bg-surface border border-line divide-y divide-line">
               {upcoming.map((v: any) => (
-                <VisitRow key={v.id} visit={v} staffList={staffList ?? []} TYPES={TYPES} />
+                <VisitRow
+                  key={v.id}
+                  visit={v}
+                  staffList={staffList ?? []}
+                  TYPES={TYPES}
+                  currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+                />
               ))}
               {!upcoming.length && <p className="px-4 py-6 text-sm text-ink/50">Nothing scheduled.</p>}
             </div>
@@ -67,7 +73,14 @@ export default async function VisitsPage() {
             <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Completed</p>
             <div className="bg-surface border border-line divide-y divide-line">
               {completed.slice(0, 10).map((v: any) => (
-                <VisitRow key={v.id} visit={v} staffList={staffList ?? []} TYPES={TYPES} completed />
+                <VisitRow
+                  key={v.id}
+                  visit={v}
+                  staffList={staffList ?? []}
+                  TYPES={TYPES}
+                  completed
+                  currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+                />
               ))}
               {!completed.length && <p className="px-4 py-6 text-sm text-ink/50">No completed visits yet.</p>}
             </div>
@@ -95,7 +108,11 @@ export default async function VisitsPage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Schedule Visit</p>
-          <NewVisitForm properties={properties ?? []} staffList={staffList ?? []} />
+          <NewVisitForm
+            properties={properties ?? []}
+            staffList={staffList ?? []}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         </div>
       </div>
     </div>

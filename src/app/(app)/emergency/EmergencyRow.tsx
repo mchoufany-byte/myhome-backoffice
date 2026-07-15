@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 type Incident = {
   id: string;
@@ -43,10 +44,12 @@ export function EmergencyRow({
   incident,
   staffList,
   slaHours,
+  currentStaff,
 }: {
   incident: Incident;
   staffList: { id: string; name: string }[];
   slaHours: number;
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -68,6 +71,14 @@ export function EmergencyRow({
       setError(updateError.message);
       return;
     }
+    await logAudit(
+      supabase,
+      currentStaff,
+      status === "resolved" ? "resolve" : "update_status",
+      "emergency_incidents",
+      incident.id,
+      status === "resolved" ? "Marked resolved" : `Status changed to ${status}`
+    );
     setResolving(false);
     router.refresh();
   }
@@ -81,8 +92,20 @@ export function EmergencyRow({
       .from("emergency_incidents")
       .update({ assigned_staff_id })
       .eq("id", incident.id);
-    if (updateError) setError(updateError.message);
-    else router.refresh();
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    const assignedName = staffList.find((s) => s.id === assigned_staff_id)?.name;
+    await logAudit(
+      supabase,
+      currentStaff,
+      "assign",
+      "emergency_incidents",
+      incident.id,
+      assignedName ? `Assigned to ${assignedName}` : "Unassigned"
+    );
+    router.refresh();
   }
 
   async function handleResolve(e: React.FormEvent<HTMLFormElement>) {

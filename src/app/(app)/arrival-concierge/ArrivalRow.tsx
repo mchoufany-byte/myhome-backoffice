@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 type Arrival = {
   id: string;
@@ -46,7 +47,15 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Completed",
 };
 
-export function ArrivalRow({ arrival, staffList }: { arrival: Arrival; staffList: { id: string; name: string }[] }) {
+export function ArrivalRow({
+  arrival,
+  staffList,
+  currentStaff,
+}: {
+  arrival: Arrival;
+  staffList: { id: string; name: string }[];
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,13 +72,29 @@ export function ArrivalRow({ arrival, staffList }: { arrival: Arrival; staffList
       .from("arrival_requests")
       .update({ assigned_staff_id, status: "in_progress" })
       .eq("id", arrival.id);
-    if (updateError) setError(updateError.message);
-    else router.refresh();
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    const assignedName = staffList.find((s) => s.id === assigned_staff_id)?.name;
+    await logAudit(
+      supabase,
+      currentStaff,
+      "assign",
+      "arrival_requests",
+      arrival.id,
+      assignedName ? `Assigned to ${assignedName}` : "Unassigned"
+    );
+    router.refresh();
   }
 
   async function handleComplete() {
     setError(null);
     const n = parseFloat(fee);
+    if (fee.trim() !== "" && (!Number.isFinite(n) || n < 0)) {
+      setError("Fee must be a number of 0 or more.");
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     const { error: updateError } = await supabase
@@ -81,6 +106,7 @@ export function ArrivalRow({ arrival, staffList }: { arrival: Arrival; staffList
       setError(updateError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "complete", "arrival_requests", arrival.id, `Marked completed, fee $${(Number.isFinite(n) ? n : 30).toFixed(2)}`);
     router.refresh();
   }
 
@@ -143,6 +169,7 @@ export function ArrivalRow({ arrival, staffList }: { arrival: Arrival; staffList
                 onChange={(e) => setFee(e.target.value)}
                 type="number"
                 step="0.01"
+                min="0"
                 className="w-20 border border-line bg-parchment text-xs px-2 py-1.5"
               />
             </div>

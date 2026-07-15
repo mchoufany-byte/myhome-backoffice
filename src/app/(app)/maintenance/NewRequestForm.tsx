@@ -3,8 +3,15 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
-export function NewRequestForm({ properties }: { properties: { id: string; nickname: string | null; address: string }[] }) {
+export function NewRequestForm({
+  properties,
+  currentStaff,
+}: {
+  properties: { id: string; nickname: string | null; address: string }[];
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -24,8 +31,12 @@ export function NewRequestForm({ properties }: { properties: { id: string; nickn
     const fileInput = form.elements.namedItem("quote_file") as HTMLInputElement;
     const file = fileInput.files?.[0];
 
-    if (!property_id || !title) {
+    if (!property_id || !title.trim()) {
       setError("Property and title are required.");
+      return;
+    }
+    if (quote_amount !== null && (!Number.isFinite(quote_amount) || quote_amount < 0)) {
+      setError("Quote amount must be a number of 0 or more.");
       return;
     }
 
@@ -63,6 +74,8 @@ export function NewRequestForm({ properties }: { properties: { id: string; nickn
       return;
     }
 
+    await logAudit(supabase, currentStaff, "create", "maintenance_requests", null, `Created ${title}`);
+
     formRef.current?.reset();
     router.refresh();
   }
@@ -96,7 +109,7 @@ export function NewRequestForm({ properties }: { properties: { id: string; nickn
       </div>
       <div>
         <label className="block text-xs text-ink/60 mb-1">Quote Amount ($)</label>
-        <input name="quote_amount" type="number" step="0.01" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
+        <input name="quote_amount" type="number" step="0.01" min="0" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
       </div>
       <div>
         <label className="block text-xs text-ink/60 mb-1">Quote Attachment</label>

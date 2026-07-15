@@ -132,7 +132,7 @@ export default async function StaffPage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">New Staff</p>
-          <NewStaffForm roles={roles} />
+          <NewStaffForm roles={roles} currentStaff={{ id: currentStaff.id, name: currentStaff.name }} />
         </div>
       </div>
     </div>

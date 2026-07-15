@@ -3,7 +3,7 @@ import { requireSection } from "@/lib/guard";
 import { ArrivalRow } from "./ArrivalRow";
 
 export default async function ArrivalConciergePage() {
-  await requireSection("arrival_concierge");
+  const currentStaff = await requireSection("arrival_concierge");
   const supabase = createClient();
 
   const [{ data: arrivals }, { data: staffList }] = await Promise.all([
@@ -27,7 +27,12 @@ export default async function ArrivalConciergePage() {
       <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Upcoming / Open ({open.length})</p>
       <div className="bg-surface border border-line divide-y divide-line mb-8">
         {open.map((a: any) => (
-          <ArrivalRow key={a.id} arrival={a} staffList={staffList ?? []} />
+          <ArrivalRow
+            key={a.id}
+            arrival={a}
+            staffList={staffList ?? []}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         ))}
         {!open.length && <p className="px-4 py-6 text-sm text-ink/50">Nothing pending.</p>}
       </div>
@@ -35,7 +40,12 @@ export default async function ArrivalConciergePage() {
       <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Completed ({done.length})</p>
       <div className="bg-surface border border-line divide-y divide-line">
         {done.slice(0, 20).map((a: any) => (
-          <ArrivalRow key={a.id} arrival={a} staffList={staffList ?? []} />
+          <ArrivalRow
+            key={a.id}
+            arrival={a}
+            staffList={staffList ?? []}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         ))}
         {!done.length && <p className="px-4 py-6 text-sm text-ink/50">Nothing completed yet.</p>}
       </div>

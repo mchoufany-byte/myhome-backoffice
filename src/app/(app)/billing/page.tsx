@@ -10,10 +10,10 @@ function shortDate(iso: string | null) {
 }
 
 export default async function BillingPage() {
-  await requireSection("billing");
+  const currentStaff = await requireSection("billing");
   const supabase = createClient();
 
-  const [{ data: bills }, { data: floats }, { data: properties }, { data: invoices }] = await Promise.all([
+  const [{ data: bills }, { data: floats }, { data: properties }, { data: invoices }, { data: billCategories }] = await Promise.all([
     supabase
       .from("bills")
       .select(
@@ -26,6 +26,7 @@ export default async function BillingPage() {
       .order("balance", { ascending: true }),
     supabase.from("properties").select("id, nickname, address").order("nickname", { ascending: true }),
     supabase.from("client_invoices").select("id, amount, status, due_date"),
+    supabase.from("bill_categories").select("key, label, is_system").order("label", { ascending: true }),
   ]);
 
   const due = bills?.filter((b) => b.status === "due") ?? [];
@@ -150,7 +151,11 @@ export default async function BillingPage() {
         <div className="space-y-6">
           <div>
             <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">New Bill</p>
-            <NewBillForm properties={properties ?? []} />
+            <NewBillForm
+              properties={properties ?? []}
+              categories={billCategories ?? []}
+              currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+            />
           </div>
 
           <div>
@@ -169,7 +174,7 @@ export default async function BillingPage() {
               </div>
               <div>
                 <label className="block text-xs text-ink/60 mb-1">Amount ($)</label>
-                <input name="amount" type="number" step="0.01" required className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
+                <input name="amount" type="number" step="0.01" min="0.01" required className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
               </div>
               <div className="flex gap-2">
                 <button type="submit" className="flex-1 bg-gold text-parchment text-sm font-medium py-2.5">

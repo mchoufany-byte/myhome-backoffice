@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 type Property = {
   id: string;
@@ -19,10 +20,12 @@ export function EditPropertyForm({
   property,
   clients,
   onDone,
+  currentStaff,
 }: {
   property: Property;
   clients: { id: string; name: string }[];
   onDone: () => void;
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -63,6 +66,8 @@ export function EditPropertyForm({
       setError(updateError.message);
       return;
     }
+
+    await logAudit(supabase, currentStaff, "update", "properties", property.id, `Updated ${nickname || address}`);
 
     router.refresh();
     onDone();

@@ -4,7 +4,7 @@ import { requireSection } from "@/lib/guard";
 import { NewClientForm } from "./NewClientForm";
 
 export default async function ClientsPage() {
-  await requireSection("clients");
+  const currentStaff = await requireSection("clients");
   const supabase = createClient();
 
   const { data: clients } = await supabase
@@ -55,7 +55,7 @@ export default async function ClientsPage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">New Client</p>
-          <NewClientForm />
+          <NewClientForm currentStaff={{ id: currentStaff.id, name: currentStaff.name }} />
         </div>
       </div>
     </div>

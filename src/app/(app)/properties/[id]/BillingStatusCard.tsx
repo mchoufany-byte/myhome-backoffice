@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 const GRACE_DAYS = 7;
 
@@ -10,16 +11,18 @@ export function BillingStatusCard({
   propertyId,
   billingStatus,
   lapsedAt,
+  currentStaff,
 }: {
   propertyId: string;
   billingStatus: string;
   lapsedAt: string | null;
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function update(patch: Record<string, unknown>) {
+  async function update(patch: Record<string, unknown>, action: string, detail: string) {
     setError(null);
     setSaving(true);
     const supabase = createClient();
@@ -29,6 +32,7 @@ export function BillingStatusCard({
       setError(updateError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, action, "properties", propertyId, detail);
     router.refresh();
   }
 
@@ -42,7 +46,13 @@ export function BillingStatusCard({
           </div>
           <button
             type="button"
-            onClick={() => update({ billing_status: "grace_period", lapsed_at: new Date().toISOString() })}
+            onClick={() =>
+              update(
+                { billing_status: "grace_period", lapsed_at: new Date().toISOString() },
+                "mark_lapsed",
+                "Marked payment lapsed"
+              )
+            }
             disabled={saving}
             className="text-xs text-red/70 font-medium hover:underline disabled:opacity-60"
           >
@@ -77,7 +87,7 @@ export function BillingStatusCard({
           <div className="flex flex-col items-end gap-1.5">
             <button
               type="button"
-              onClick={() => update({ billing_status: "active", lapsed_at: null })}
+              onClick={() => update({ billing_status: "active", lapsed_at: null }, "reactivate_billing", "Reactivated billing")}
               disabled={saving}
               className="text-xs text-green font-medium hover:underline disabled:opacity-60"
             >
@@ -86,7 +96,7 @@ export function BillingStatusCard({
             {graceExpired && (
               <button
                 type="button"
-                onClick={() => update({ billing_status: "lapsed" })}
+                onClick={() => update({ billing_status: "lapsed" }, "confirm_lapsed", "Confirmed lapsed")}
                 disabled={saving}
                 className="text-xs text-red font-medium hover:underline disabled:opacity-60"
               >
@@ -113,7 +123,7 @@ export function BillingStatusCard({
         </div>
         <button
           type="button"
-          onClick={() => update({ billing_status: "active", lapsed_at: null })}
+          onClick={() => update({ billing_status: "active", lapsed_at: null }, "reactivate_billing", "Reactivated billing")}
           disabled={saving}
           className="text-xs text-green font-medium hover:underline disabled:opacity-60"
         >

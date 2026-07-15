@@ -41,7 +41,7 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
         {client.client_type === "company" && client.company_name ? `Signatory: ${client.name}` : " "}
       </p>
 
-      <ClientInfoCard client={client} />
+      <ClientInfoCard client={client} currentStaff={{ id: currentStaff.id, name: currentStaff.name }} />
 
       <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">Properties</p>
       <div className="bg-surface border border-line divide-y divide-line">

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 const TYPES = [
   { value: "morning_visit", label: "Morning Visit" },
@@ -14,9 +15,11 @@ const TYPES = [
 export function NewVisitForm({
   properties,
   staffList,
+  currentStaff,
 }: {
   properties: { id: string; nickname: string | null; address: string }[];
   staffList: { id: string; name: string }[];
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -62,6 +65,8 @@ export function NewVisitForm({
       setError(insertError.message);
       return;
     }
+
+    await logAudit(supabase, currentStaff, "create", "visits", null, `Scheduled ${type} visit`);
 
     formRef.current?.reset();
     router.refresh();

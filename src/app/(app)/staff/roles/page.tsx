@@ -29,7 +29,13 @@ export default async function RolesPage() {
             navigation/page access -- database write permissions for a brand-new role may still need to be
             granted separately.
           </p>
-          <RolesManager initialRoles={roles} initialAccessMap={accessMap} allSections={ALL_SECTIONS} sectionLabels={SECTION_LABELS} />
+          <RolesManager
+            initialRoles={roles}
+            initialAccessMap={accessMap}
+            allSections={ALL_SECTIONS}
+            sectionLabels={SECTION_LABELS}
+            currentStaff={{ id: staff.id, name: staff.name }}
+          />
         </>
       )}
     </div>

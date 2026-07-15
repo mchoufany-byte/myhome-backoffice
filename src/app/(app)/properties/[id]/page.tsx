@@ -126,6 +126,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
         clients={clients ?? []}
         clientName={client?.name ?? null}
         floatBalance={float ? Number(float.balance ?? 0) : null}
+        currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
       />
 
       <PropertyGallery propertyId={property.id} photos={photos ?? []} />
@@ -134,15 +135,21 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
         propertyId={property.id}
         billingStatus={property.billing_status ?? "active"}
         lapsedAt={property.lapsed_at}
+        currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
       />
 
-      <HealthReportCard propertyId={property.id} latest={latestHealthScore} />
+      <HealthReportCard
+        propertyId={property.id}
+        latest={latestHealthScore}
+        currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+      />
 
       <KeyCustodyLog
         propertyId={property.id}
         events={(keyEvents ?? []) as any}
         staffList={staffList ?? []}
         isOutWithStaff={isOutWithStaff}
+        currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
       />
 
       {tier && tierInfo && (

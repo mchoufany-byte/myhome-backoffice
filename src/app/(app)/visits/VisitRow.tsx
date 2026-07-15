@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 type Visit = {
   id: string;
@@ -46,11 +47,13 @@ export function VisitRow({
   staffList,
   TYPES,
   completed = false,
+  currentStaff,
 }: {
   visit: Visit;
   staffList: { id: string; name: string }[];
   TYPES: { value: string; label: string }[];
   completed?: boolean;
+  currentStaff?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [rescheduling, setRescheduling] = useState(false);
@@ -75,8 +78,12 @@ export function VisitRow({
       .from("visits")
       .update({ staff_id, second_staff_id })
       .eq("id", visit.id);
-    if (updateError) setError(updateError.message);
-    else router.refresh();
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    await logAudit(supabase, currentStaff, "assign", "visits", visit.id, "Assigned staff to visit");
+    router.refresh();
   }
 
   async function handleReschedule(e: React.FormEvent<HTMLFormElement>) {
@@ -101,6 +108,7 @@ export function VisitRow({
       setError(updateError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "reschedule", "visits", visit.id, reason ? `Rescheduled: ${reason}` : "Rescheduled");
     setRescheduling(false);
     router.refresh();
   }
@@ -120,6 +128,7 @@ export function VisitRow({
       setError(updateError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "cancel", "visits", visit.id, reason ? `Cancelled: ${reason}` : "Cancelled");
     setCancelling(false);
     router.refresh();
   }
@@ -139,6 +148,7 @@ export function VisitRow({
       setError(updateError.message);
       return;
     }
+    await logAudit(supabase, currentStaff, "update_notes", "visits", visit.id, "Updated visit notes");
     setEditingNotes(false);
     router.refresh();
   }

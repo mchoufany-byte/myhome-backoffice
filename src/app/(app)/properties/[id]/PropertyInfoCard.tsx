@@ -20,16 +20,25 @@ export function PropertyInfoCard({
   clients,
   clientName,
   floatBalance,
+  currentStaff,
 }: {
   property: Property;
   clients: { id: string; name: string }[];
   clientName: string | null;
   floatBalance: number | null;
+  currentStaff?: { id: string; name: string };
 }) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
-    return <EditPropertyForm property={property} clients={clients} onDone={() => setEditing(false)} />;
+    return (
+      <EditPropertyForm
+        property={property}
+        clients={clients}
+        onDone={() => setEditing(false)}
+        currentStaff={currentStaff}
+      />
+    );
   }
 
   return (

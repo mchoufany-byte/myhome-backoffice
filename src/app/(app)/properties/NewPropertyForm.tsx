@@ -3,8 +3,15 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logAudit } from "@/lib/audit";
 
-export function NewPropertyForm({ clients }: { clients: { id: string; name: string }[] }) {
+export function NewPropertyForm({
+  clients,
+  currentStaff,
+}: {
+  clients: { id: string; name: string }[];
+  currentStaff?: { id: string; name: string };
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
@@ -50,6 +57,8 @@ export function NewPropertyForm({ clients }: { clients: { id: string; name: stri
       setError(insertError.message);
       return;
     }
+
+    await logAudit(supabase, currentStaff, "create", "properties", null, `Created ${nickname || address}`);
 
     formRef.current?.reset();
     router.refresh();

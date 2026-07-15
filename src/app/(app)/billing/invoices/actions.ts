@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
 import { requireStaff } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { dueDateForPeriod } from "@/lib/billing";
 
 export async function markInvoicePaid(formData: FormData) {
   const supabase = createClient();
@@ -45,30 +46,40 @@ export async function generateMonthlyInvoices() {
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const dueDate = new Date(now);
-  dueDate.setDate(dueDate.getDate() + 15);
+  // Derived from the period itself (not "today"), so every invoice generated
+  // for this period -- this run or a future one -- gets the same due date.
+  const dueDateStr = dueDateForPeriod(period);
 
-  const [{ data: existingForPeriod }, { data: properties }, { data: unbilledMaintenance }, { data: unbilledArrivals }, { data: unbilledRenewals }] =
-    await Promise.all([
-      supabase.from("client_invoices").select("client_id").eq("billing_period", period),
-      supabase.from("properties").select("id, client_id, nickname, address, plan_tier, status"),
-      supabase
-        .from("maintenance_requests")
-        .select("id, title, coordination_fee, property_id")
-        .eq("status", "completed")
-        .eq("fee_invoiced", false)
-        .not("coordination_fee", "is", null),
-      supabase
-        .from("arrival_requests")
-        .select("id, arrival_date, fee_amount, property_id")
-        .eq("status", "completed")
-        .eq("fee_invoiced", false),
-      supabase
-        .from("renewals")
-        .select("id, renewal_type, fee_amount, property_id")
-        .eq("status", "completed")
-        .eq("fee_invoiced", false),
-    ]);
+  const [
+    { data: existingForPeriod },
+    { data: properties },
+    { data: unbilledMaintenance },
+    { data: unbilledArrivals },
+    { data: unbilledRenewals },
+    { data: renewalTypes },
+  ] = await Promise.all([
+    supabase.from("client_invoices").select("client_id").eq("billing_period", period),
+    supabase.from("properties").select("id, client_id, nickname, address, plan_tier, status"),
+    supabase
+      .from("maintenance_requests")
+      .select("id, title, coordination_fee, property_id")
+      .eq("status", "completed")
+      .eq("fee_invoiced", false)
+      .not("coordination_fee", "is", null),
+    supabase
+      .from("arrival_requests")
+      .select("id, arrival_date, fee_amount, property_id")
+      .eq("status", "completed")
+      .eq("fee_invoiced", false),
+    supabase
+      .from("renewals")
+      .select("id, renewal_type, fee_amount, property_id")
+      .eq("status", "completed")
+      .eq("fee_invoiced", false),
+    supabase.from("renewal_types").select("key, label"),
+  ]);
+
+  const renewalTypeLabel = new Map((renewalTypes ?? []).map((t) => [t.key, t.label]));
 
   const alreadyInvoiced = new Set((existingForPeriod ?? []).map((i) => i.client_id));
 
@@ -116,7 +127,10 @@ export async function generateMonthlyInvoices() {
 
     for (const r of unbilledRenewals ?? []) {
       if (!r.property_id || !propIds.has(r.property_id)) continue;
-      lineItems.push({ description: `Renewal Handling — ${r.renewal_type}`, amount: Number(r.fee_amount ?? 50) });
+      lineItems.push({
+        description: `Renewal Handling — ${renewalTypeLabel.get(r.renewal_type) ?? r.renewal_type}`,
+        amount: Number(r.fee_amount ?? 50),
+      });
       renewalIdsToMark.push(r.id);
     }
 
@@ -128,7 +142,7 @@ export async function generateMonthlyInvoices() {
       billing_period: period,
       line_items: lineItems,
       amount: total,
-      due_date: dueDate.toISOString().slice(0, 10),
+      due_date: dueDateStr,
       status: "issued",
     });
     if (!insertError) createdCount++;

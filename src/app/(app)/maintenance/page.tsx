@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function MaintenancePage() {
-  await requireSection("maintenance");
+  const currentStaff = await requireSection("maintenance");
   const supabase = createClient();
 
   const [{ data: jobs }, { data: properties }] = await Promise.all([
@@ -71,7 +71,11 @@ export default async function MaintenancePage() {
                 </div>
                 {(j.status === "in_progress" || j.status === "awaiting_approval") && (
                   <div className="mt-3">
-                    <MaintenanceFeeAction jobId={j.id} quoteAmount={j.quote_amount ? Number(j.quote_amount) : null} />
+                    <MaintenanceFeeAction
+                      jobId={j.id}
+                      quoteAmount={j.quote_amount ? Number(j.quote_amount) : null}
+                      currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+                    />
                   </div>
                 )}
               </div>
@@ -118,7 +122,7 @@ export default async function MaintenancePage() {
 
         <div>
           <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold mb-3">New Request</p>
-          <NewRequestForm properties={properties ?? []} />
+          <NewRequestForm properties={properties ?? []} currentStaff={{ id: currentStaff.id, name: currentStaff.name }} />
         </div>
       </div>
     </div>

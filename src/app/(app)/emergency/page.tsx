@@ -5,7 +5,7 @@ import { EmergencyRow } from "./EmergencyRow";
 const SLA_HOURS = 4;
 
 export default async function EmergencyPage() {
-  await requireSection("emergency");
+  const currentStaff = await requireSection("emergency");
   const supabase = createClient();
 
   const [{ data: incidents }, { data: staffList }] = await Promise.all([
@@ -47,7 +47,13 @@ export default async function EmergencyPage() {
       </p>
       <div className="bg-surface border border-line divide-y divide-line mb-8">
         {open.map((inc: any) => (
-          <EmergencyRow key={inc.id} incident={inc} staffList={staffList ?? []} slaHours={SLA_HOURS} />
+          <EmergencyRow
+            key={inc.id}
+            incident={inc}
+            staffList={staffList ?? []}
+            slaHours={SLA_HOURS}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         ))}
         {!open.length && <p className="px-4 py-6 text-sm text-ink/50">No open incidents. Good.</p>}
       </div>
@@ -57,7 +63,13 @@ export default async function EmergencyPage() {
       </p>
       <div className="bg-surface border border-line divide-y divide-line">
         {resolved.slice(0, 20).map((inc: any) => (
-          <EmergencyRow key={inc.id} incident={inc} staffList={staffList ?? []} slaHours={SLA_HOURS} />
+          <EmergencyRow
+            key={inc.id}
+            incident={inc}
+            staffList={staffList ?? []}
+            slaHours={SLA_HOURS}
+            currentStaff={{ id: currentStaff.id, name: currentStaff.name }}
+          />
         ))}
         {!resolved.length && <p className="px-4 py-6 text-sm text-ink/50">Nothing resolved yet.</p>}
       </div>
