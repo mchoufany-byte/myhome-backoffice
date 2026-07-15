@@ -41,21 +41,36 @@ export default async function BillingPage() {
       <p className="text-[11px] font-semibold tracking-widest uppercase text-gold">Finance</p>
       <h1 className="text-2xl font-serif text-green mt-1 mb-6">Billing & Float</h1>
 
-      <Link
-        href="/billing/invoices"
-        className="block bg-surface border border-line p-4 mb-8 hover:border-green transition-colors max-w-md"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold">Client Invoices</p>
-            <p className="text-sm text-ink/60 mt-1">
-              ${outstandingInvoiceTotal.toFixed(2)} outstanding
-              {overdueInvoiceCount > 0 && <span className="text-red"> · {overdueInvoiceCount} overdue</span>}
-            </p>
+      <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <Link
+          href="/billing/invoices"
+          className="block bg-surface border border-line p-4 hover:border-green transition-colors max-w-md flex-1"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold">Client Invoices</p>
+              <p className="text-sm text-ink/60 mt-1">
+                ${outstandingInvoiceTotal.toFixed(2)} outstanding
+                {overdueInvoiceCount > 0 && <span className="text-red"> · {overdueInvoiceCount} overdue</span>}
+              </p>
+            </div>
+            <span className="text-green text-sm font-medium">Manage &rarr;</span>
           </div>
-          <span className="text-green text-sm font-medium">Manage &rarr;</span>
-        </div>
-      </Link>
+        </Link>
+
+        <Link
+          href="/billing/ledger"
+          className="block bg-surface border border-line p-4 hover:border-green transition-colors max-w-md flex-1"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10.5px] font-semibold tracking-widest uppercase text-gold">Client Ledger</p>
+              <p className="text-sm text-ink/60 mt-1">Every charge & payment, by client</p>
+            </div>
+            <span className="text-green text-sm font-medium">View &rarr;</span>
+          </div>
+        </Link>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">

@@ -37,7 +37,7 @@ export function MaintenanceFeeAction({
     const supabase = createClient();
     const { error: updateError } = await supabase
       .from("maintenance_requests")
-      .update({ status: "completed", coordination_fee: Number.isFinite(n) ? n : null })
+      .update({ status: "completed", coordination_fee: Number.isFinite(n) ? n : null, completed_at: new Date().toISOString() })
       .eq("id", jobId);
     setSaving(false);
     if (updateError) {

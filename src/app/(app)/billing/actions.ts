@@ -63,6 +63,14 @@ export async function markBillPaid(formData: FormData) {
       property_id: bill.property_id,
       balance: newBalance,
     });
+
+    await supabase.from("float_transactions").insert({
+      property_id: bill.property_id,
+      type: "draw",
+      amount: Number(bill.amount),
+      bill_id: id,
+      staff_id: staff.id,
+    });
   }
 
   await logAudit(supabase, staff, "mark_paid", "bills", id, `Marked paid via ${paid_from ?? "unspecified"}`);
@@ -92,6 +100,13 @@ export async function topUpFloat(formData: FormData) {
     balance: newBalance,
     last_topup_amount: amount,
     last_topup_at: new Date().toISOString(),
+  });
+
+  await supabase.from("float_transactions").insert({
+    property_id,
+    type: "topup",
+    amount,
+    staff_id: staff.id,
   });
 
   await logAudit(supabase, staff, "top_up", "utility_float", property_id, `Topped up $${amount.toFixed(2)}`);
