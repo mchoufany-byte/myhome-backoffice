@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PLAN_INFO, planTierOf } from "@/lib/packages";
 import { dueDateForPeriod } from "@/lib/billing";
 import { logAudit } from "@/lib/audit";
+import { todayStr, isPastDate } from "@/lib/dates";
 
 type ClientOption = { id: string; name: string; client_type: string | null; company_name: string | null };
 type PropertyOption = { id: string; client_id: string; nickname: string | null; address: string; plan_tier: string | null };
@@ -184,6 +185,10 @@ export function NewInvoiceForm({
       setError("Every line item amount must be a number of 0 or more.");
       return;
     }
+    if (isPastDate(dueDate)) {
+      setError("Due date can't be in the past.");
+      return;
+    }
 
     setSaving(true);
     const supabase = createClient();
@@ -256,6 +261,7 @@ export function NewInvoiceForm({
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
+            min={todayStr()}
             className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
           />
         </div>

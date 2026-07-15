@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { todayStr, isPastDate } from "@/lib/dates";
 
 type RenewalType = { key: string; label: string; is_system: boolean };
 
@@ -79,6 +80,10 @@ export function NewRenewalForm({
 
     if (!property_id || !renewal_type) {
       setError("Property and type are required.");
+      return;
+    }
+    if (isPastDate(due_date)) {
+      setError("Due date can't be in the past.");
       return;
     }
 
@@ -174,7 +179,12 @@ export function NewRenewalForm({
       </div>
       <div>
         <label className="block text-xs text-ink/60 mb-1">Due Date (optional)</label>
-        <input name="due_date" type="date" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
+        <input
+          name="due_date"
+          type="date"
+          min={todayStr()}
+          className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
+        />
       </div>
       <div>
         <label className="block text-xs text-ink/60 mb-1">Notes (optional)</label>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { todayStr, isPastDate } from "@/lib/dates";
 
 type RenewalType = { key: string; label: string; is_system: boolean };
 
@@ -122,6 +123,13 @@ export function RenewalRow({
       setEditError("Fee must be a number.");
       return;
     }
+    // Only block if the date was actually changed to a new past date --
+    // an already-overdue renewal should stay editable for notes/fee without
+    // forcing the due date forward.
+    if (editDueDate !== (renewal.due_date ?? "") && isPastDate(editDueDate)) {
+      setEditError("Due date can't be in the past.");
+      return;
+    }
     setEditSaving(true);
     const supabase = createClient();
     const { error: updateError } = await supabase
@@ -197,6 +205,7 @@ export function RenewalRow({
                 type="date"
                 value={editDueDate}
                 onChange={(e) => setEditDueDate(e.target.value)}
+                min={todayStr()}
                 className="w-full border border-line bg-parchment px-2 py-1.5 text-xs"
               />
             </div>

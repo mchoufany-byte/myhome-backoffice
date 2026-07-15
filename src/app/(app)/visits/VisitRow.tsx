@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { todayStr, isPastDate } from "@/lib/dates";
 
 type Visit = {
   id: string;
@@ -94,6 +95,10 @@ export function VisitRow({
     const reason = (e.currentTarget.elements.namedItem("reschedule_reason") as HTMLTextAreaElement).value || null;
     if (!date) {
       setError("Pick a date.");
+      return;
+    }
+    if (isPastDate(date)) {
+      setError("New date can't be in the past.");
       return;
     }
     setSaving(true);
@@ -298,7 +303,13 @@ export function VisitRow({
           <div className="flex items-end gap-2">
             <div>
               <label className="block text-[10px] text-ink/50 mb-1">New Date</label>
-              <input name="date" type="date" required className="border border-line bg-parchment text-xs px-2 py-1.5" />
+              <input
+                name="date"
+                type="date"
+                required
+                min={todayStr()}
+                className="border border-line bg-parchment text-xs px-2 py-1.5"
+              />
             </div>
             <div>
               <label className="block text-[10px] text-ink/50 mb-1">New Time</label>

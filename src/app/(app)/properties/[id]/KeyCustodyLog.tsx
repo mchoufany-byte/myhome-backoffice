@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { nowLocalStr, isPastDateTime } from "@/lib/dates";
 
 type KeyEvent = {
   id: string;
@@ -55,6 +56,10 @@ export function KeyCustodyLog({
 
     if (logging === "checkout" && !staff_id) {
       setError("Pick which staff member is taking the key.");
+      return;
+    }
+    if (logging === "checkout" && isPastDateTime(expected_return)) {
+      setError("Expected return can't be in the past.");
       return;
     }
 
@@ -143,6 +148,7 @@ export function KeyCustodyLog({
               <input
                 name="expected_return"
                 type="datetime-local"
+                min={nowLocalStr()}
                 className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
               />
             </div>

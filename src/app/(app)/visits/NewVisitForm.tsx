@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { todayStr, isPastDate } from "@/lib/dates";
 
 const TYPES = [
   { value: "morning_visit", label: "Morning Visit" },
@@ -40,6 +41,10 @@ export function NewVisitForm({
 
     if (!property_id || !type || !date) {
       setError("Property, type, and date are required.");
+      return;
+    }
+    if (isPastDate(date)) {
+      setError("Visit date can't be in the past.");
       return;
     }
     if (second_staff_id && second_staff_id === staff_id) {
@@ -122,7 +127,13 @@ export function NewVisitForm({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs text-ink/60 mb-1">Date</label>
-          <input name="date" type="date" required className="w-full border border-line bg-parchment px-2.5 py-2 text-sm" />
+          <input
+            name="date"
+            type="date"
+            required
+            min={todayStr()}
+            className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
+          />
         </div>
         <div>
           <label className="block text-xs text-ink/60 mb-1">Time</label>
