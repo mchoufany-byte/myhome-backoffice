@@ -14,6 +14,7 @@ const NAV_ITEMS: { href: string; label: string; section: Section }[] = [
   { href: "/arrival-concierge", label: "Arrival Concierge", section: "arrival_concierge" },
   { href: "/renewals", label: "Renewals", section: "renewals" },
   { href: "/services", label: "Services", section: "services" },
+  { href: "/buildings", label: "Buildings", section: "buildings" },
   { href: "/billing", label: "Billing & Float", section: "billing" },
   { href: "/documents", label: "Documents", section: "documents" },
   { href: "/staff", label: "Staff", section: "staff" },

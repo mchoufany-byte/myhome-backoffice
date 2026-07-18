@@ -14,7 +14,7 @@ export async function createProperty(formData: FormData) {
   const status = String(formData.get("status") ?? "") || null;
   const key_custody = String(formData.get("key_custody") ?? "") || null;
 
-  if (!address) return;
+  if (!address || !client_id) return;
 
   await supabase.from("properties").insert({
     nickname,

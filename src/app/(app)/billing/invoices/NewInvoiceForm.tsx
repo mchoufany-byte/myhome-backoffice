@@ -224,6 +224,7 @@ export function NewInvoiceForm({
         <select
           value={clientId}
           onChange={(e) => handleClientChange(e.target.value)}
+          required
           className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
         >
           <option value="">Select...</option>

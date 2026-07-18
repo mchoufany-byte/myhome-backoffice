@@ -78,8 +78,8 @@ export function NewPropertyForm({
       </div>
       <div>
         <label className="block text-xs text-ink/60 mb-1">Client</label>
-        <select name="client_id" className="w-full border border-line bg-parchment px-2.5 py-2 text-sm">
-          <option value="">Unassigned</option>
+        <select name="client_id" required className="w-full border border-line bg-parchment px-2.5 py-2 text-sm">
+          <option value="">Select...</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}

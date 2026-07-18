@@ -17,6 +17,7 @@ export type Section =
   | "arrival_concierge"
   | "renewals"
   | "services"
+  | "buildings"
   | "analytics"
   | "audit_log";
 
@@ -33,6 +34,7 @@ export const ALL_SECTIONS: Section[] = [
   "arrival_concierge",
   "renewals",
   "services",
+  "buildings",
   "analytics",
   "audit_log",
 ];
@@ -50,6 +52,7 @@ export const SECTION_LABELS: Record<Section, string> = {
   arrival_concierge: "Arrival Concierge",
   renewals: "Renewals",
   services: "Services",
+  buildings: "Buildings",
   analytics: "Analytics",
   audit_log: "Audit Log",
 };

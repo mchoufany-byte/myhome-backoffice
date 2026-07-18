@@ -33,6 +33,7 @@ const ACTION_LABEL: Record<string, string> = {
   top_up: "Topped Up",
   void: "Voided",
   generate_invoices: "Generated Invoices",
+  generate_charges: "Generated Charges",
   mark_lapsed: "Marked Lapsed",
   confirm_lapsed: "Confirmed Lapsed",
   reactivate_billing: "Reactivated Billing",

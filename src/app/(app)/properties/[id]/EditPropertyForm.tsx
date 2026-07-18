@@ -100,6 +100,7 @@ export function EditPropertyForm({
           <select
             name="client_id"
             defaultValue={property.client_id ?? ""}
+            required
             className="w-full border border-line bg-parchment px-2.5 py-2 text-sm"
           >
             <option value="">Select...</option>
